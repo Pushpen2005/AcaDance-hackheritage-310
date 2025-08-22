@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sample Data Setup</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+            margin: 20px; 
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status-item { 
+            margin: 15px 0; 
+            padding: 15px; 
+            border-radius: 6px;
+            border-left: 4px solid #ccc;
+        }
+        .success { 
+            background: #f0f9ff; 
+            border-left-color: #10b981; 
+            color: #065f46;
+        }
+        .error { 
+            background: #fef2f2; 
+            border-left-color: #ef4444; 
+            color: #7f1d1d;
+        }
+        .warning { 
+            background: #fffbeb; 
+            border-left-color: #f59e0b; 
+            color: #92400e;
+        }
+        .loading {
+            background: #f8fafc;
+            border-left-color: #6b7280;
+            color: #374151;
+        }
+        button { 
+            background: #3b82f6; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            margin: 10px 5px 10px 0;
+        }
+        button:hover { background: #2563eb; }
+        button:disabled { background: #9ca3af; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎓 Sample Data Setup</h1>
+        <p>This will create sample student groups and classes for testing the attendance system.</p>
+        
+        <button onclick="createSampleData()" id="create-btn">Create Sample Data</button>
+        <button onclick="checkExistingData()" id="check-btn">Check Existing Data</button>
+        
+        <div id="status-container">
+            <div class="loading">Ready to create sample data for testing</div>
+        </div>
+    </div>
+    
+    <script src="supabase-config.js"></script>
+    <script>
+        const supabase = window.supabaseClient;
+        
+        const sampleGroups = [
+            { name: 'Group A - Computer Science', program: 'Computer Science', year: 1, size: 25 },
+            { name: 'Group B - Computer Science', program: 'Computer Science', year: 1, size: 24 },
+            { name: 'Group A - Information Technology', program: 'Information Technology', year: 2, size: 20 },
+            { name: 'Group A - Software Engineering', program: 'Software Engineering', year: 3, size: 18 }
+        ];
+        
+        const sampleClasses = [
+            { name: 'Introduction to Programming', code: 'CS101', department: 'Computer Science', credits: 3 },
+            { name: 'Data Structures', code: 'CS201', department: 'Computer Science', credits: 4 },
+            { name: 'Database Systems', code: 'IT301', department: 'Information Technology', credits: 3 },
+            { name: 'Software Architecture', code: 'SE401', department: 'Software Engineering', credits: 4 },
+            { name: 'Web Development', code: 'CS301', department: 'Computer Science', credits: 3 }
+        ];
+        
+        async function createSampleData() {
+            const container = document.getElementById('status-container');
+            const btn = document.getElementById('create-btn');
+            
+            btn.disabled = true;
+            btn.textContent = 'Creating...';
+            
+            container.innerHTML = '<div class="loading">Creating sample data...</div>';
+            
+            let results = [];
+            
+            try {
+                // Create student groups
+                results.push('<h3>Creating Student Groups:</h3>');
+                
+                for (const group of sampleGroups) {
+                    try {
+                        const { data, error } = await supabase
+                            .from('student_groups')
+                            .upsert(group, { onConflict: 'name' })
+                            .select();
+                        
+                        if (error) {
+                            results.push(`<div class="error">❌ Failed to create group "${group.name}": ${error.message}</div>`);
+                        } else {
+                            results.push(`<div class="success">✅ Created group "${group.name}"</div>`);
+                        }
+                    } catch (e) {
+                        results.push(`<div class="error">❌ Error creating group "${group.name}": ${e.message}</div>`);
+                    }
+                }
+                
+                // Create classes
+                results.push('<h3>Creating Classes:</h3>');
+                
+                for (const cls of sampleClasses) {
+                    try {
+                        const { data, error } = await supabase
+                            .from('classes')
+                            .upsert(cls, { onConflict: 'code' })
+                            .select();
+                        
+                        if (error) {
+                            results.push(`<div class="error">❌ Failed to create class "${cls.name}": ${error.message}</div>`);
+                        } else {
+                            results.push(`<div class="success">✅ Created class "${cls.name}" (${cls.code})</div>`);
+                        }
+                    } catch (e) {
+                        results.push(`<div class="error">❌ Error creating class "${cls.name}": ${e.message}</div>`);
+                    }
+                }
+                
+                results.push('<div class="success">🎉 Sample data creation completed!</div>');
+                
+            } catch (error) {
+                results.push(`<div class="error">❌ General error: ${error.message}</div>`);
+            }
+            
+            container.innerHTML = results.join('');
+            
+            btn.disabled = false;
+            btn.textContent = 'Create Sample Data';
+        }
+        
+        async function checkExistingData() {
+            const container = document.getElementById('status-container');
+            const btn = document.getElementById('check-btn');
+            
+            btn.disabled = true;
+            btn.textContent = 'Checking...';
+            
+            let results = [];
+            
+            try {
+                // Check student groups
+                const { data: groups, error: groupError } = await supabase
+                    .from('student_groups')
+                    .select('*');
+                
+                if (groupError) {
+                    results.push(`<div class="error">❌ Failed to fetch student groups: ${groupError.message}</div>`);
+                } else {
+                    results.push(`<div class="success">✅ Found ${groups.length} student groups</div>`);
+                    groups.forEach(group => {
+                        results.push(`<div class="status-item">📚 ${group.name} (${group.program}, Year ${group.year})</div>`);
+                    });
+                }
+                
+                // Check classes
+                const { data: classes, error: classError } = await supabase
+                    .from('classes')
+                    .select('*');
+                
+                if (classError) {
+                    results.push(`<div class="error">❌ Failed to fetch classes: ${classError.message}</div>`);
+                } else {
+                    results.push(`<div class="success">✅ Found ${classes.length} classes</div>`);
+                    classes.forEach(cls => {
+                        results.push(`<div class="status-item">🎯 ${cls.name} (${cls.code}) - ${cls.credits} credits</div>`);
+                    });
+                }
+                
+            } catch (error) {
+                results.push(`<div class="error">❌ Error checking data: ${error.message}</div>`);
+            }
+            
+            container.innerHTML = results.join('');
+            
+            btn.disabled = false;
+            btn.textContent = 'Check Existing Data';
+        }
+        
+        // Check connection on load
+        window.addEventListener('load', async () => {
+            try {
+                await supabase.auth.getSession();
+                console.log('✅ Supabase connected');
+            } catch (e) {
+                document.getElementById('status-container').innerHTML = 
+                    '<div class="error">❌ Failed to connect to Supabase: ' + e.message + '</div>';
+            }
+        });
+    </script>
+</body>
+</html>

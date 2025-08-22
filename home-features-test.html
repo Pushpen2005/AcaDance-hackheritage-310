@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Page Feature Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+            margin: 20px; 
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-card {
+            margin: 15px 0;
+            padding: 20px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            background: #f9fafb;
+        }
+        .test-card.pass { border-color: #10b981; background: #ecfdf5; }
+        .test-card.fail { border-color: #ef4444; background: #fef2f2; }
+        .test-card.warning { border-color: #f59e0b; background: #fffbeb; }
+        button { 
+            background: #3b82f6; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            margin: 5px; 
+        }
+        button:hover { background: #2563eb; }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+        }
+        .feature-item {
+            padding: 15px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #d1d5db;
+        }
+        .status { font-weight: bold; margin-left: 10px; }
+        .success { color: #059669; }
+        .error { color: #dc2626; }
+        .warning { color: #d97706; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏠 Home Page Feature Test</h1>
+        <p>Testing all features specific to the home.html page</p>
+        
+        <button onclick="testAllHomeFeatures()">🧪 Test All Home Features</button>
+        <button onclick="testAttendanceFlow()">📋 Test Attendance Flow</button>
+        <button onclick="testUIComponents()">🎨 Test UI Components</button>
+        
+        <div class="test-card" id="navigation-test">
+            <h3>🧭 Navigation System</h3>
+            <div id="nav-results">Click test button to check navigation...</div>
+            <button onclick="testNavigation()">Test Navigation</button>
+        </div>
+        
+        <div class="test-card" id="attendance-test">
+            <h3>📋 Attendance Features</h3>
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <h4>Group Selector</h4>
+                    <div id="group-selector-status">⏳ Testing...</div>
+                    <button onclick="testGroupSelector()">Test</button>
+                </div>
+                <div class="feature-item">
+                    <h4>QR Code Generation</h4>
+                    <div id="qr-status">⏳ Testing...</div>
+                    <button onclick="testQRGeneration()">Test</button>
+                </div>
+                <div class="feature-item">
+                    <h4>Manual Attendance</h4>
+                    <div id="manual-status">⏳ Testing...</div>
+                    <button onclick="testManualAttendance()">Test</button>
+                </div>
+                <div class="feature-item">
+                    <h4>Real-time Updates</h4>
+                    <div id="realtime-status">⏳ Testing...</div>
+                    <button onclick="testRealtimeUpdates()">Test</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-card" id="modal-test">
+            <h3>📦 Modal System</h3>
+            <div id="modal-results">Click test button to check modals...</div>
+            <button onclick="testModals()">Test Modals</button>
+        </div>
+        
+        <div class="test-card" id="data-test">
+            <h3>💾 Data Integration</h3>
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <h4>Student Data Loading</h4>
+                    <div id="student-data-status">⏳ Testing...</div>
+                    <button onclick="testStudentDataLoading()">Test</button>
+                </div>
+                <div class="feature-item">
+                    <h4>Class Data Loading</h4>
+                    <div id="class-data-status">⏳ Testing...</div>
+                    <button onclick="testClassDataLoading()">Test</button>
+                </div>
+                <div class="feature-item">
+                    <h4>Attendance Records</h4>
+                    <div id="attendance-records-status">⏳ Testing...</div>
+                    <button onclick="testAttendanceRecords()">Test</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-card" id="scripts-test">
+            <h3>📜 JavaScript Integration</h3>
+            <div id="scripts-results">Click test button to check scripts...</div>
+            <button onclick="testScriptIntegration()">Test Scripts</button>
+        </div>
+        
+        <div class="test-card" id="responsive-test">
+            <h3>📱 Responsive Design</h3>
+            <div id="responsive-results">Click test button to check responsiveness...</div>
+            <button onclick="testResponsiveDesign()">Test Responsiveness</button>
+        </div>
+        
+        <div id="summary" style="margin-top: 30px; padding: 20px; background: #f3f4f6; border-radius: 8px;">
+            <h3>📊 Test Summary</h3>
+            <div id="summary-content">Run tests to see summary...</div>
+        </div>
+    </div>
+    
+    <script src="supabase-config.js"></script>
+    <script>
+        const supabase = window.supabaseClient;
+        let testResults = {};
+        
+        async function testAllHomeFeatures() {
+            document.querySelector('h1').textContent = '🏠 Home Page Feature Test - Running...';
+            
+            await testNavigation();
+            await testGroupSelector();
+            await testQRGeneration();
+            await testManualAttendance();
+            await testRealtimeUpdates();
+            await testModals();
+            await testStudentDataLoading();
+            await testClassDataLoading();
+            await testAttendanceRecords();
+            await testScriptIntegration();
+            await testResponsiveDesign();
+            
+            generateHomeSummary();
+            document.querySelector('h1').textContent = '🏠 Home Page Feature Test - Complete';
+        }
+        
+        async function testNavigation() {
+            const navTest = document.getElementById('navigation-test');
+            navTest.className = 'test-card';
+            
+            try {
+                // Check if navigation tabs exist
+                const navTabs = document.querySelectorAll('.nav-tab, .tab, [data-tab]');
+                const tabContents = document.querySelectorAll('.module, .tab-content, [data-tab-content]');
+                
+                let results = [];
+                
+                if (navTabs.length > 0) {
+                    results.push(`✅ Found ${navTabs.length} navigation tabs`);
+                } else {
+                    results.push('❌ No navigation tabs found');
+                }
+                
+                if (tabContents.length > 0) {
+                    results.push(`✅ Found ${tabContents.length} tab content areas`);
+                } else {
+                    results.push('❌ No tab content areas found');
+                }
+                
+                // Test if navigation is functional
+                const hasActiveClass = Array.from(navTabs).some(tab => tab.classList.contains('active'));
+                if (hasActiveClass) {
+                    results.push('✅ Active navigation state detected');
+                } else {
+                    results.push('⚠️ No active navigation state detected');
+                }
+                
+                document.getElementById('nav-results').innerHTML = results.join('<br>');
+                testResults.navigation = { success: results.filter(r => r.includes('✅')).length > 0 };
+                
+                if (testResults.navigation.success) {
+                    navTest.className = 'test-card pass';
+                } else {
+                    navTest.className = 'test-card fail';
+                }
+                
+            } catch (error) {
+                document.getElementById('nav-results').innerHTML = `❌ Navigation test failed: ${error.message}`;
+                testResults.navigation = { success: false, error: error.message };
+                navTest.className = 'test-card fail';
+            }
+        }
+        
+        async function testGroupSelector() {
+            const status = document.getElementById('group-selector-status');
+            
+            try {
+                // Test if student groups can be loaded
+                const { data: groups, error } = await supabase
+                    .from('student_groups')
+                    .select('*')
+                    .limit(5);
+                
+                if (error) {
+                    if (error.code === 'PGRST116') {
+                        status.innerHTML = '<span class="error">❌ Student groups table not found</span>';
+                        testResults.groupSelector = { success: false, error: 'Table missing' };
+                        return;
+                    }
+                    throw error;
+                }
+                
+                status.innerHTML = `<span class="success">✅ Found ${groups.length} student groups</span>`;
+                testResults.groupSelector = { success: true, count: groups.length };
+                
+                // Check if selector element exists in DOM
+                const selector = document.querySelector('#attendance-group-select, [id*="group"], select[name*="group"]');
+                if (selector) {
+                    status.innerHTML += '<br><span class="success">✅ Group selector element found</span>';
+                } else {
+                    status.innerHTML += '<br><span class="warning">⚠️ Group selector element not found in current page</span>';
+                }
+                
+            } catch (error) {
+                status.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+                testResults.groupSelector = { success: false, error: error.message };
+            }
+        }
+        
+        async function testQRGeneration() {
+            const status = document.getElementById('qr-status');
+            
+            try {
+                // Test QR generation function
+                const testSessionId = '00000000-0000-0000-0000-000000000000';
+                const { data, error } = await supabase
+                    .rpc('generate_session_qr', { p_session_id: testSessionId });
+                
+                if (error) {
+                    status.innerHTML = `<span class="error">❌ QR function not available: ${error.message}</span>`;
+                    testResults.qrGeneration = { success: false, error: error.message };
+                    return;
+                }
+                
+                status.innerHTML = '<span class="success">✅ QR generation function available</span>';
+                testResults.qrGeneration = { success: true };
+                
+                // Check for QR-related UI elements
+                const qrElements = document.querySelectorAll('[id*="qr"], [class*="qr"], .qr-code');
+                if (qrElements.length > 0) {
+                    status.innerHTML += `<br><span class="success">✅ Found ${qrElements.length} QR UI elements</span>`;
+                } else {
+                    status.innerHTML += '<br><span class="warning">⚠️ No QR UI elements found</span>';
+                }
+                
+            } catch (error) {
+                status.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+                testResults.qrGeneration = { success: false, error: error.message };
+            }
+        }
+        
+        async function testManualAttendance() {
+            const status = document.getElementById('manual-status');
+            
+            try {
+                // Check if attendance records table exists
+                const { data, error } = await supabase
+                    .from('attendance_records')
+                    .select('*')
+                    .limit(1);
+                
+                if (error && error.code === 'PGRST116') {
+                    status.innerHTML = '<span class="error">❌ Attendance records table not found</span>';
+                    testResults.manualAttendance = { success: false, error: 'Table missing' };
+                    return;
+                }
+                
+                status.innerHTML = '<span class="success">✅ Attendance records table accessible</span>';
+                
+                // Check for manual attendance UI elements
+                const manualElements = document.querySelectorAll('[id*="manual"], [class*="manual"], .attendance-btn');
+                if (manualElements.length > 0) {
+                    status.innerHTML += `<br><span class="success">✅ Found ${manualElements.length} manual attendance UI elements</span>`;
+                } else {
+                    status.innerHTML += '<br><span class="warning">⚠️ No manual attendance UI elements found</span>';
+                }
+                
+                testResults.manualAttendance = { success: true };
+                
+            } catch (error) {
+                status.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+                testResults.manualAttendance = { success: false, error: error.message };
+            }
+        }
+        
+        async function testRealtimeUpdates() {
+            const status = document.getElementById('realtime-status');
+            
+            try {
+                // Test real-time subscription
+                const subscription = supabase
+                    .channel('test-attendance')
+                    .on('postgres_changes', 
+                        { event: '*', schema: 'public', table: 'attendance_records' }, 
+                        (payload) => console.log('Real-time update:', payload)
+                    )
+                    .subscribe();
+                
+                if (subscription) {
+                    status.innerHTML = '<span class="success">✅ Real-time subscription created</span>';
+                    testResults.realtimeUpdates = { success: true };
+                    
+                    // Clean up subscription
+                    setTimeout(() => {
+                        supabase.removeChannel(subscription);
+                    }, 1000);
+                } else {
+                    status.innerHTML = '<span class="error">❌ Failed to create real-time subscription</span>';
+                    testResults.realtimeUpdates = { success: false };
+                }
+                
+            } catch (error) {
+                status.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+                testResults.realtimeUpdates = { success: false, error: error.message };
+            }
+        }
+        
+        async function testModals() {
+            const modalTest = document.getElementById('modal-test');
+            modalTest.className = 'test-card';
+            
+            try {
+                // Check for modal elements
+                const modals = document.querySelectorAll('.modal, [id*="modal"], [class*="modal"]');
+                const modalTriggers = document.querySelectorAll('[data-modal], [onclick*="modal"], .modal-trigger');
+                
+                let results = [];
+                
+                if (modals.length > 0) {
+                    results.push(`✅ Found ${modals.length} modal elements`);
+                } else {
+                    results.push('❌ No modal elements found');
+                }
+                
+                if (modalTriggers.length > 0) {
+                    results.push(`✅ Found ${modalTriggers.length} modal triggers`);
+                } else {
+                    results.push('⚠️ No modal triggers found');
+                }
+                
+                // Check for modal close buttons
+                const closeButtons = document.querySelectorAll('.modal-close, [onclick*="close"], .close');
+                if (closeButtons.length > 0) {
+                    results.push(`✅ Found ${closeButtons.length} close buttons`);
+                }
+                
+                document.getElementById('modal-results').innerHTML = results.join('<br>');
+                testResults.modals = { success: results.filter(r => r.includes('✅')).length > 0 };
+                
+                if (testResults.modals.success) {
+                    modalTest.className = 'test-card pass';
+                } else {
+                    modalTest.className = 'test-card fail';
+                }
+                
+            } catch (error) {
+                document.getElementById('modal-results').innerHTML = `❌ Modal test failed: ${error.message}`;
+                testResults.modals = { success: false, error: error.message };
+                modalTest.className = 'test-card fail';
+            }
+        }
+        
+        async function testStudentDataLoading() {
+            const status = document.getElementById('student-data-status');
+            
+            try {
+                const { data: students, error } = await supabase
+                    .from('students')
+                    .select('*')
+                    .limit(5);
+                
+                if (error) {
+                    if (error.code === 'PGRST116') {
+                        status.innerHTML = '<span class="error">❌ Students table not found</span>';
+                        testResults.studentData = { success: false, error: 'Table missing' };
+                        return;
+                    }
+                    throw error;
+                }
+                
+                status.innerHTML = `<span class="success">✅ Students table accessible (${students.length} records)</span>`;
+                testResults.studentData = { success: true, count: students.length };
+                
+            } catch (error) {
+                status.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+                testResults.studentData = { success: false, error: error.message };
+            }
+        }
+        
+        async function testClassDataLoading() {
+            const status = document.getElementById('class-data-status');
+            
+            try {
+                const { data: classes, error } = await supabase
+                    .from('classes')
+                    .select('*')
+                    .limit(5);
+                
+                if (error) {
+                    if (error.code === 'PGRST116') {
+                        status.innerHTML = '<span class="error">❌ Classes table not found</span>';
+                        testResults.classData = { success: false, error: 'Table missing' };
+                        return;
+                    }
+                    throw error;
+                }
+                
+                status.innerHTML = `<span class="success">✅ Classes table accessible (${classes.length} records)</span>`;
+                testResults.classData = { success: true, count: classes.length };
+                
+            } catch (error) {
+                status.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+                testResults.classData = { success: false, error: error.message };
+            }
+        }
+        
+        async function testAttendanceRecords() {
+            const status = document.getElementById('attendance-records-status');
+            
+            try {
+                const { data: records, error } = await supabase
+                    .from('attendance_records')
+                    .select('*')
+                    .limit(5);
+                
+                if (error) {
+                    if (error.code === 'PGRST116') {
+                        status.innerHTML = '<span class="error">❌ Attendance records table not found</span>';
+                        testResults.attendanceRecords = { success: false, error: 'Table missing' };
+                        return;
+                    }
+                    throw error;
+                }
+                
+                status.innerHTML = `<span class="success">✅ Attendance records table accessible (${records.length} records)</span>`;
+                testResults.attendanceRecords = { success: true, count: records.length };
+                
+            } catch (error) {
+                status.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+                testResults.attendanceRecords = { success: false, error: error.message };
+            }
+        }
+        
+        async function testScriptIntegration() {
+            const scriptsTest = document.getElementById('scripts-test');
+            scriptsTest.className = 'test-card';
+            
+            try {
+                let results = [];
+                
+                // Check if Supabase is loaded
+                if (window.supabaseClient) {
+                    results.push('✅ Supabase client loaded');
+                } else {
+                    results.push('❌ Supabase client not found');
+                }
+                
+                // Check for home.js functions
+                if (typeof window.showModal === 'function') {
+                    results.push('✅ Modal functions available');
+                } else {
+                    results.push('⚠️ Modal functions not found');
+                }
+                
+                // Check for attendance manager
+                if (window.attendanceManager || window.AttendanceManager) {
+                    results.push('✅ Attendance manager loaded');
+                } else {
+                    results.push('⚠️ Attendance manager not found');
+                }
+                
+                // Check for required scripts
+                const scripts = Array.from(document.scripts);
+                const hasSupabaseConfig = scripts.some(s => s.src.includes('supabase-config'));
+                const hasHomeJs = scripts.some(s => s.src.includes('home.js'));
+                const hasAttendanceJs = scripts.some(s => s.src.includes('attendance'));
+                
+                if (hasSupabaseConfig) results.push('✅ Supabase config script found');
+                if (hasHomeJs) results.push('✅ Home.js script found');
+                if (hasAttendanceJs) results.push('✅ Attendance script found');
+                
+                document.getElementById('scripts-results').innerHTML = results.join('<br>');
+                testResults.scripts = { success: results.filter(r => r.includes('✅')).length > 2 };
+                
+                if (testResults.scripts.success) {
+                    scriptsTest.className = 'test-card pass';
+                } else {
+                    scriptsTest.className = 'test-card warning';
+                }
+                
+            } catch (error) {
+                document.getElementById('scripts-results').innerHTML = `❌ Script test failed: ${error.message}`;
+                testResults.scripts = { success: false, error: error.message };
+                scriptsTest.className = 'test-card fail';
+            }
+        }
+        
+        async function testResponsiveDesign() {
+            const responsiveTest = document.getElementById('responsive-test');
+            responsiveTest.className = 'test-card';
+            
+            try {
+                let results = [];
+                
+                // Check viewport meta tag
+                const viewport = document.querySelector('meta[name="viewport"]');
+                if (viewport) {
+                    results.push('✅ Viewport meta tag found');
+                } else {
+                    results.push('❌ Viewport meta tag missing');
+                }
+                
+                // Check for responsive CSS classes
+                const responsiveClasses = ['container', 'grid', 'flex', 'responsive', 'mobile'];
+                let foundClasses = 0;
+                
+                responsiveClasses.forEach(className => {
+                    if (document.querySelector(`.${className}`)) {
+                        foundClasses++;
+                    }
+                });
+                
+                if (foundClasses > 2) {
+                    results.push(`✅ Responsive CSS classes found (${foundClasses})`);
+                } else {
+                    results.push('⚠️ Limited responsive CSS classes');
+                }
+                
+                // Check CSS media queries
+                let hasMediaQueries = false;
+                try {
+                    Array.from(document.styleSheets).forEach(sheet => {
+                        try {
+                            Array.from(sheet.cssRules || []).forEach(rule => {
+                                if (rule.type === CSSRule.MEDIA_RULE) {
+                                    hasMediaQueries = true;
+                                }
+                            });
+                        } catch (e) {
+                            // Cross-origin stylesheets
+                        }
+                    });
+                } catch (e) {
+                    // Fallback
+                }
+                
+                if (hasMediaQueries) {
+                    results.push('✅ CSS media queries detected');
+                } else {
+                    results.push('⚠️ No CSS media queries detected');
+                }
+                
+                document.getElementById('responsive-results').innerHTML = results.join('<br>');
+                testResults.responsive = { success: results.filter(r => r.includes('✅')).length > 0 };
+                
+                if (testResults.responsive.success) {
+                    responsiveTest.className = 'test-card pass';
+                } else {
+                    responsiveTest.className = 'test-card warning';
+                }
+                
+            } catch (error) {
+                document.getElementById('responsive-results').innerHTML = `❌ Responsive test failed: ${error.message}`;
+                testResults.responsive = { success: false, error: error.message };
+                responsiveTest.className = 'test-card fail';
+            }
+        }
+        
+        async function testAttendanceFlow() {
+            await testGroupSelector();
+            await testQRGeneration();
+            await testManualAttendance();
+            await testRealtimeUpdates();
+            await testAttendanceRecords();
+            
+            const attendanceResults = [
+                testResults.groupSelector?.success,
+                testResults.qrGeneration?.success,
+                testResults.manualAttendance?.success,
+                testResults.realtimeUpdates?.success,
+                testResults.attendanceRecords?.success
+            ].filter(Boolean);
+            
+            alert(`Attendance Flow Test Complete: ${attendanceResults.length}/5 features working`);
+        }
+        
+        async function testUIComponents() {
+            await testNavigation();
+            await testModals();
+            await testResponsiveDesign();
+            await testScriptIntegration();
+            
+            const uiResults = [
+                testResults.navigation?.success,
+                testResults.modals?.success,
+                testResults.responsive?.success,
+                testResults.scripts?.success
+            ].filter(Boolean);
+            
+            alert(`UI Components Test Complete: ${uiResults.length}/4 components working`);
+        }
+        
+        function generateHomeSummary() {
+            const total = Object.keys(testResults).length;
+            const passed = Object.values(testResults).filter(r => r.success).length;
+            const failed = total - passed;
+            
+            const summary = `
+                <h4>📊 Home Page Test Results</h4>
+                <div style="background: ${failed === 0 ? '#ecfdf5' : failed < 3 ? '#fffbeb' : '#fef2f2'}; padding: 15px; border-radius: 6px;">
+                    <p><strong>Total Features Tested:</strong> ${total}</p>
+                    <p><strong>Working:</strong> ✅ ${passed}</p>
+                    <p><strong>Issues:</strong> ❌ ${failed}</p>
+                    <p><strong>Success Rate:</strong> ${((passed/total)*100).toFixed(1)}%</p>
+                </div>
+                
+                <h4>🔍 Feature Status:</h4>
+                ${Object.entries(testResults).map(([feature, result]) => `
+                    <div style="margin: 5px 0; padding: 8px; background: ${result.success ? '#f0fdf4' : '#fef2f2'}; border-radius: 4px;">
+                        ${result.success ? '✅' : '❌'} <strong>${feature}:</strong> ${result.success ? 'Working' : (result.error || 'Failed')}
+                    </div>
+                `).join('')}
+                
+                ${failed > 0 ? `
+                    <div style="margin-top: 15px; padding: 15px; background: #fef3c7; border-radius: 6px;">
+                        <h4>🔧 Next Steps:</h4>
+                        <ul>
+                            ${failed > 3 ? '<li>Run the complete database setup first</li>' : ''}
+                            <li>Check the complete-setup.html for database issues</li>
+                            <li>Ensure all required tables are created in Supabase</li>
+                            <li>Verify that home.html includes all required scripts</li>
+                        </ul>
+                    </div>
+                ` : `
+                    <div style="margin-top: 15px; padding: 15px; background: #ecfdf5; border-radius: 6px;">
+                        <h4>🎉 Excellent!</h4>
+                        <p>All home page features are working correctly. Your system is ready for use!</p>
+                    </div>
+                `}
+            `;
+            
+            document.getElementById('summary-content').innerHTML = summary;
+        }
+        
+        // Auto-run basic tests
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                testScriptIntegration();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

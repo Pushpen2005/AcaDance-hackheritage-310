@@ -295,7 +295,7 @@ function updateDashboard() {
     const totalAttendance = appData.attendanceData.reduce((sum, record) => sum + record.present, 0);
     const totalPossible = appData.attendanceData.reduce((sum, record) => sum + record.present + record.absent + record.late, 0);
     const attendanceRate = totalPossible > 0 ? Math.round((totalAttendance / totalPossible) * 100) : 0;
-    document.getElementById('attendance-rate').textContent = `${attendanceRate}%`;
+    document.getElementById('attendance-rate').textContent
 
     // Update today's schedule
     updateTodaysSchedule();
@@ -785,36 +785,103 @@ function populateConstraints() {
     }
 }
 
-// Attendance Functions
+// Attendance Functions (Enhanced with Supabase integration)
 function populateAttendanceData() {
     populateSelectors();
+    // Initialize attendance manager if it exists
+    if (window.attendanceManager) {
+        window.attendanceManager.loadClasses();
+        window.attendanceManager.loadStudentGroups();
+    }
 }
 
+// Legacy functions for backward compatibility
 function generateQRCode() {
-    document.getElementById('qr-code-section').classList.remove('hidden');
-    document.getElementById('manual-attendance-section').classList.add('hidden');
-    
-    // Simulate QR code scanning
-    let scannedCount = 0;
-    const maxStudents = 30;
-    
-    const interval = setInterval(() => {
-        scannedCount += Math.floor(Math.random() * 3) + 1;
-        if (scannedCount > maxStudents) scannedCount = maxStudents;
+    if (window.attendanceManager) {
+        window.attendanceManager.generateQRCode();
+    } else {
+        // Fallback to original implementation
+        document.getElementById('qr-code-section').classList.remove('hidden');
+        document.getElementById('manual-attendance-section').classList.add('hidden');
         
-        document.getElementById('qr-scanned').textContent = scannedCount;
+        // Simulate QR code scanning
+        let scannedCount = 0;
+        const maxStudents = 30;
         
-        if (scannedCount >= maxStudents) {
-            clearInterval(interval);
-        }
-    }, 1000);
+        const interval = setInterval(() => {
+            scannedCount += Math.floor(Math.random() * 3) + 1;
+            if (scannedCount > maxStudents) scannedCount = maxStudents;
+            
+            document.getElementById('qr-scanned').textContent = scannedCount;
+            
+            if (scannedCount >= maxStudents) {
+                clearInterval(interval);
+            }
+        }, 1000);
+    }
 }
 
 function showManualAttendance() {
-    document.getElementById('manual-attendance-section').classList.remove('hidden');
-    document.getElementById('qr-code-section').classList.add('hidden');
+    if (window.attendanceManager) {
+        window.attendanceManager.showManualAttendance();
+    } else {
+        // Fallback to original implementation
+        document.getElementById('manual-attendance-section').classList.remove('hidden');
+        document.getElementById('qr-code-section').classList.add('hidden');
+        
+        displayStudentAttendanceList();
+    }
+}
+
+function saveAttendance() {
+    if (window.attendanceManager) {
+        window.attendanceManager.saveAttendance();
+    } else {
+        // Fallback to original implementation
+        const selectedClass = document.getElementById('class-select').value;
+        const selectedGroup = document.getElementById('attendance-group-select').value;
+        const date = document.getElementById('attendance-date').value;
+        
+        if (selectedClass && selectedGroup && date) {
+            addActivity(`Attendance saved for ${selectedClass} on ${date}`);
+            alert('Attendance saved successfully!');
+            
+            // Update attendance data
+            const presentCount = Object.values(attendanceRecords).filter(records => 
+                records[date] === 'present'
+            ).length || Math.floor(Math.random() * 5) + 25;
+            
+            appData.attendanceData.push({
+                date: date,
+                class: selectedClass,
+                present: presentCount,
+                absent: 2,
+                late: 1
+            });
+            
+            updateDashboard();
+        } else {
+            alert('Please select class, group, and date before saving.');
+        }
+    }
+}
+
+// Student search functionality
+function filterStudents() {
+    const searchTerm = document.getElementById('student-search').value.toLowerCase();
+    const studentItems = document.querySelectorAll('.student-attendance-item');
     
-    displayStudentAttendanceList();
+    studentItems.forEach(item => {
+        const studentName = item.querySelector('.student-name').textContent.toLowerCase();
+        const studentId = item.querySelector('.student-id').textContent.toLowerCase();
+        const studentEmail = item.querySelector('.student-email').textContent.toLowerCase();
+        
+        if (studentName.includes(searchTerm) || studentId.includes(searchTerm) || studentEmail.includes(searchTerm)) {
+            item.style.display = 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
 }
 
 function displayStudentAttendanceList() {
@@ -859,10 +926,15 @@ function markAttendance(studentId, status) {
 }
 
 function markAllPresent() {
-    document.querySelectorAll('.attendance-controls-student').forEach(controls => {
-        const presentBtn = controls.querySelector('.attendance-btn');
-        if (presentBtn) presentBtn.click();
-    });
+    if (window.attendanceManager) {
+        window.attendanceManager.markAllPresent();
+    } else {
+        // Fallback implementation
+        document.querySelectorAll('.attendance-controls-student').forEach(controls => {
+            const presentBtn = controls.querySelector('.attendance-btn');
+            if (presentBtn) presentBtn.click();
+        });
+    }
 }
 
 function markPreviousPattern() {
@@ -873,34 +945,6 @@ function markPreviousPattern() {
         const targetBtn = controls.children[status === 'present' ? 0 : (status === 'absent' ? 1 : 2)];
         if (targetBtn) targetBtn.click();
     });
-}
-
-function saveAttendance() {
-    const selectedClass = document.getElementById('class-select').value;
-    const selectedGroup = document.getElementById('attendance-group-select').value;
-    const date = document.getElementById('attendance-date').value;
-    
-    if (selectedClass && selectedGroup && date) {
-        addActivity(`Attendance saved for ${selectedClass} on ${date}`);
-        alert('Attendance saved successfully!');
-        
-        // Update attendance data
-        const presentCount = Object.values(attendanceRecords).filter(records => 
-            records[date] === 'present'
-        ).length || Math.floor(Math.random() * 5) + 25;
-        
-        appData.attendanceData.push({
-            date: date,
-            class: selectedClass,
-            present: presentCount,
-            absent: 2,
-            late: 1
-        });
-        
-        updateDashboard();
-    } else {
-        alert('Please select class, group, and date before saving.');
-    }
 }
 
 function bulkUpload() {
@@ -1462,3 +1506,229 @@ window.importData = importData;
 window.backupData = backupData;
 window.exportTimetable = exportTimetable;
 window.printTimetable = printTimetable;
+
+// Authentication and Navigation Functions
+let currentUser = null;
+let authDropdownVisible = false;
+
+// Toggle authentication dropdown
+function toggleAuthDropdown() {
+    authDropdownVisible = !authDropdownVisible;
+    const dropdown = document.getElementById('auth-dropdown-menu');
+    const chevron = document.querySelector('.auth-chevron');
+    
+    if (dropdown) {
+        if (authDropdownVisible) {
+            dropdown.style.display = 'block';
+            dropdown.style.opacity = '1';
+            dropdown.style.transform = 'translateY(0)';
+            if (chevron) chevron.style.transform = 'rotate(180deg)';
+        } else {
+            dropdown.style.opacity = '0';
+            dropdown.style.transform = 'translateY(-10px)';
+            if (chevron) chevron.style.transform = 'rotate(0deg)';
+            setTimeout(() => {
+                dropdown.style.display = 'none';
+            }, 200);
+        }
+    }
+}
+
+// Redirect to login page
+function redirectToLogin(type = 'login') {
+    // Store the redirect type in localStorage for the login page
+    localStorage.setItem('authType', type);
+    // Redirect to login page
+    window.location.href = 'login.html';
+}
+
+// Check authentication status
+async function checkAuthStatus() {
+    try {
+        if (typeof window.supabaseClient !== 'undefined') {
+            const { data: { session }, error } = await window.supabaseClient.auth.getSession();
+            
+            if (error) {
+                console.error('Error checking auth status:', error);
+                return false;
+            }
+            
+            if (session && session.user) {
+                currentUser = session.user;
+                showUserMenu(session.user);
+                return true;
+            }
+        }
+        
+        showAuthButtons();
+        return false;
+    } catch (error) {
+        console.error('Error in checkAuthStatus:', error);
+        showAuthButtons();
+        return false;
+    }
+}
+
+// Show user menu when authenticated
+function showUserMenu(user) {
+    const authDropdown = document.getElementById('auth-dropdown');
+    const userMenu = document.getElementById('user-menu');
+    const userNameEl = document.getElementById('user-name');
+    const userAvatarEl = document.getElementById('user-avatar');
+    
+    if (authDropdown) authDropdown.style.display = 'none';
+    if (userMenu) userMenu.classList.remove('hidden');
+    
+    if (userNameEl) {
+        userNameEl.textContent = user.user_metadata?.full_name || 
+                                 user.user_metadata?.first_name || 
+                                 user.email?.split('@')[0] || 
+                                 'User';
+    }
+    
+    if (userAvatarEl && user.user_metadata?.avatar_url) {
+        userAvatarEl.src = user.user_metadata.avatar_url;
+    }
+}
+
+// Show authentication buttons when not authenticated
+function showAuthButtons() {
+    const authDropdown = document.getElementById('auth-dropdown');
+    const userMenu = document.getElementById('user-menu');
+    
+    if (authDropdown) authDropdown.style.display = 'block';
+    if (userMenu) userMenu.classList.add('hidden');
+}
+
+// Show user profile modal/page
+function showProfile() {
+    // For now, just show an alert - can be expanded to show a profile modal
+    alert('Profile functionality will be implemented in a future update.');
+    // TODO: Implement profile modal or redirect to profile page
+}
+
+// Show settings modal/page
+function showSettings() {
+    // Switch to settings tab
+    switchTab('settings');
+}
+
+// Logout function
+async function logout() {
+    try {
+        if (typeof window.supabaseClient !== 'undefined') {
+            const { error } = await window.supabaseClient.auth.signOut();
+            
+            if (error) {
+                console.error('Error during logout:', error);
+                alert('Error during logout. Please try again.');
+                return;
+            }
+        }
+        
+        // Clear current user
+        currentUser = null;
+        
+        // Clear any stored authentication data
+        localStorage.removeItem('authType');
+        
+        // Show auth buttons
+        showAuthButtons();
+        
+        // Optional: Redirect to login page
+        // window.location.href = 'login.html';
+        
+        console.log('✅ Successfully logged out');
+    } catch (error) {
+        console.error('Error during logout:', error);
+        alert('Error during logout. Please try again.');
+    }
+}
+
+// Initialize authentication on page load
+function initializeAuth() {
+    // Check if user is already authenticated
+    checkAuthStatus();
+    
+    // Listen for auth state changes
+    if (typeof window.supabaseClient !== 'undefined') {
+        window.supabaseClient.auth.onAuthStateChange((event, session) => {
+            console.log('Auth state changed:', event, session);
+            
+            if (event === 'SIGNED_IN' && session) {
+                currentUser = session.user;
+                showUserMenu(session.user);
+            } else if (event === 'SIGNED_OUT') {
+                currentUser = null;
+                showAuthButtons();
+            }
+        });
+    }
+    
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', (event) => {
+        const authDropdown = document.getElementById('auth-dropdown');
+        const authDropdownMenu = document.getElementById('auth-dropdown-menu');
+        
+        if (authDropdown && !authDropdown.contains(event.target)) {
+            if (authDropdownVisible) {
+                toggleAuthDropdown();
+            }
+        }
+    });
+}
+
+// Add authentication functions to global scope
+window.toggleAuthDropdown = toggleAuthDropdown;
+window.redirectToLogin = redirectToLogin;
+window.checkAuthStatus = checkAuthStatus;
+window.showUserMenu = showUserMenu;
+window.showAuthButtons = showAuthButtons;
+window.showProfile = showProfile;
+window.showSettings = showSettings;
+window.logout = logout;
+window.initializeAuth = initializeAuth;
+window.updateCurrentTime = updateCurrentTime;
+
+// Initialize authentication when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize authentication
+    initializeAuth();
+    
+    // Initialize basic functionality
+    try {
+        switchTab('dashboard');
+    } catch (e) {
+        console.log('switchTab function not available yet');
+    }
+    
+    // Initialize clock
+    updateCurrentTime();
+    setInterval(updateCurrentTime, 1000);
+    
+    console.log('✅ Home page initialized with authentication');
+});
+
+// Basic utility functions
+function updateCurrentTime() {
+    const now = new Date();
+    const dateElement = document.getElementById('current-date');
+    const timeElement = document.getElementById('current-time');
+    
+    if (dateElement) {
+        dateElement.textContent = now.toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    }
+    
+    if (timeElement) {
+        timeElement.textContent = now.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    }
+}

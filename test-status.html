@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HH310 Status Test</title>
+</head>
+<body>
+    <h1>HH310 Project Status Test</h1>
+    <div id="test-results"></div>
+    
+    <script>
+        function runTests() {
+            const results = [];
+            
+            // Test 1: Check if we can access home.html
+            results.push("✅ Test file loaded successfully");
+            
+            // Test 2: Check console for any errors
+            const originalError = console.error;
+            const errors = [];
+            console.error = (...args) => {
+                errors.push(args.join(' '));
+                originalError.apply(console, args);
+            };
+            
+            // Test 3: Try to load the home page in an iframe
+            const iframe = document.createElement('iframe');
+            iframe.src = './home.html';
+            iframe.style.width = '100%';
+            iframe.style.height = '500px';
+            iframe.onload = () => {
+                results.push("✅ home.html loads without blocking errors");
+                updateResults();
+            };
+            iframe.onerror = () => {
+                results.push("❌ home.html failed to load");
+                updateResults();
+            };
+            
+            function updateResults() {
+                document.getElementById('test-results').innerHTML = 
+                    '<h2>Test Results:</h2>' +
+                    results.map(r => `<p>${r}</p>`).join('') +
+                    (errors.length > 0 ? 
+                        '<h3>Console Errors:</h3>' + 
+                        errors.map(e => `<p style="color: red;">${e}</p>`).join('') 
+                        : '<p style="color: green;">No console errors detected</p>');
+            }
+            
+            document.body.appendChild(iframe);
+            updateResults();
+        }
+        
+        // Run tests when page loads
+        window.addEventListener('load', runTests);
+    </script>
+</body>
+</html>

@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Database Setup</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+            margin: 20px; 
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .step {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            background: #f9fafb;
+        }
+        .step.completed {
+            border-color: #10b981;
+            background: #ecfdf5;
+        }
+        .step.error {
+            border-color: #ef4444;
+            background: #fef2f2;
+        }
+        .step.running {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+        .sql-code {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin: 10px 0;
+            overflow-x: auto;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        button { 
+            background: #3b82f6; 
+            color: white; 
+            border: none; 
+            padding: 12px 24px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            margin: 10px 10px 10px 0;
+            font-size: 14px;
+        }
+        button:hover { background: #2563eb; }
+        button:disabled { background: #9ca3af; cursor: not-allowed; }
+        .success { color: #059669; font-weight: bold; }
+        .error { color: #dc2626; font-weight: bold; }
+        .warning { color: #d97706; font-weight: bold; }
+        .info { color: #2563eb; font-weight: bold; }
+        h1 { color: #1f2937; }
+        h2 { color: #374151; }
+        .manual-section {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛠️ Complete Database Setup Guide</h1>
+        <p>This will help you set up your database step by step, handling any existing tables correctly.</p>
+        
+        <div class="step" id="step1">
+            <h2>Step 1: Check Current Database Status</h2>
+            <button onclick="checkCurrentStatus()" id="check-btn">Check Current Status</button>
+            <div id="status-result"></div>
+        </div>
+        
+        <div class="step" id="step2">
+            <h2>Step 2: Create Basic Tables (Safe)</h2>
+            <div class="manual-section">
+                <p><strong>⚠️ Manual Step Required:</strong></p>
+                <p>Copy the SQL below and run it in your Supabase SQL Editor:</p>
+                <button onclick="copyToClipboard('basic-sql')" id="copy-basic-btn">📋 Copy SQL</button>
+                <div class="sql-code" id="basic-sql">-- Loading SQL...</div>
+                <p><em>After running this SQL, click "Verify Basic Setup" below.</em></p>
+            </div>
+            <button onclick="verifyBasicSetup()" id="verify-basic-btn">Verify Basic Setup</button>
+            <div id="basic-result"></div>
+        </div>
+        
+        <div class="step" id="step3">
+            <h2>Step 3: Create Attendance Tables</h2>
+            <div class="manual-section">
+                <p><strong>⚠️ Manual Step Required:</strong></p>
+                <p>Copy the SQL below and run it in your Supabase SQL Editor:</p>
+                <button onclick="copyToClipboard('attendance-sql')" id="copy-attendance-btn">📋 Copy SQL</button>
+                <div class="sql-code" id="attendance-sql">-- Loading SQL...</div>
+                <p><em>After running this SQL, click "Verify Attendance Setup" below.</em></p>
+            </div>
+            <button onclick="verifyAttendanceSetup()" id="verify-attendance-btn">Verify Attendance Setup</button>
+            <div id="attendance-result"></div>
+        </div>
+        
+        <div class="step" id="step4">
+            <h2>Step 4: Final Verification & Testing</h2>
+            <button onclick="runFinalVerification()" id="final-btn">Run Final Verification</button>
+            <div id="final-result"></div>
+        </div>
+        
+        <div class="step" id="step5">
+            <h2>Step 5: Test Your System</h2>
+            <button onclick="openTestPages()" id="test-btn">Open Test Pages</button>
+            <div id="test-result">
+                <p>After successful setup, test these pages:</p>
+                <ul>
+                    <li><strong>login-test.html</strong> - Test authentication</li>
+                    <li><strong>login.html</strong> - Full login page</li>
+                    <li><strong>home.html</strong> - Main application (after login)</li>
+                    <li><strong>sample-data.html</strong> - Add test data</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <script src="supabase-config.js"></script>
+    <script>
+        const supabase = window.supabaseClient;
+        
+        // Load SQL content
+        const basicSQL = `-- HH310 Academic System Database Setup (Safe Version)
+-- This version handles existing tables gracefully
+
+-- Profiles table (using IF NOT EXISTS)
+CREATE TABLE IF NOT EXISTS profiles (
+  id UUID REFERENCES auth.users(id) PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  first_name TEXT,
+  last_name TEXT,
+  full_name TEXT,
+  role TEXT CHECK (role IN ('student', 'faculty', 'admin')) NOT NULL,
+  department TEXT,
+  bio TEXT,
+  avatar_url TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Students table
+CREATE TABLE IF NOT EXISTS students (
+  id UUID REFERENCES profiles(id) PRIMARY KEY,
+  student_id TEXT UNIQUE,
+  program TEXT,
+  year INTEGER,
+  group_name TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Faculty table
+CREATE TABLE IF NOT EXISTS faculty (
+  id UUID REFERENCES profiles(id) PRIMARY KEY,
+  employee_id TEXT UNIQUE,
+  specialization TEXT,
+  max_hours_per_week INTEGER DEFAULT 20,
+  available_days TEXT[],
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Admins table
+CREATE TABLE IF NOT EXISTS admins (
+  id UUID REFERENCES profiles(id) PRIMARY KEY,
+  admin_level TEXT DEFAULT 'standard',
+  permissions TEXT[],
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS (only if not already enabled)
+DO $$ 
+BEGIN
+  ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE students ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE faculty ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE admins ENABLE ROW LEVEL SECURITY;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;`;
+
+        const attendanceSQL = "Copy the full content from attendance-database-setup.sql file";
+        
+        document.getElementById('basic-sql').textContent = basicSQL;
+        document.getElementById('attendance-sql').textContent = "Copy the full content from attendance-database-setup.sql file";
+        
+        async function checkCurrentStatus() {
+            const btn = document.getElementById('check-btn');
+            const result = document.getElementById('status-result');
+            const step = document.getElementById('step1');
+            
+            btn.disabled = true;
+            btn.textContent = 'Checking...';
+            step.className = 'step running';
+            
+            const tables = ['profiles', 'students', 'faculty', 'admins', 'classes', 'student_groups'];
+            const results = [];
+            
+            for (const table of tables) {
+                try {
+                    const { data, error } = await supabase.from(table).select('*').limit(1);
+                    if (error && (error.message.includes('does not exist') || error.code === 'PGRST116')) {
+                        results.push(`❌ ${table} - Missing`);
+                    } else {
+                        results.push(`✅ ${table} - Exists`);
+                    }
+                } catch (e) {
+                    results.push(`❌ ${table} - Error: ${e.message}`);
+                }
+            }
+            
+            result.innerHTML = '<h4>Current Status:</h4><ul><li>' + results.join('</li><li>') + '</li></ul>';
+            step.className = 'step completed';
+            btn.disabled = false;
+            btn.textContent = 'Recheck Status';
+        }
+        
+        async function verifyBasicSetup() {
+            const btn = document.getElementById('verify-basic-btn');
+            const result = document.getElementById('basic-result');
+            const step = document.getElementById('step2');
+            
+            btn.disabled = true;
+            btn.textContent = 'Verifying...';
+            step.className = 'step running';
+            
+            const basicTables = ['profiles', 'students', 'faculty', 'admins'];
+            let allExist = true;
+            
+            for (const table of basicTables) {
+                try {
+                    const { data, error } = await supabase.from(table).select('*').limit(1);
+                    if (error && (error.message.includes('does not exist') || error.code === 'PGRST116')) {
+                        allExist = false;
+                        break;
+                    }
+                } catch (e) {
+                    allExist = false;
+                    break;
+                }
+            }
+            
+            if (allExist) {
+                result.innerHTML = '<p class="success">✅ All basic tables exist! Proceed to Step 3.</p>';
+                step.className = 'step completed';
+            } else {
+                result.innerHTML = '<p class="error">❌ Some tables are still missing. Please run the SQL in Supabase first.</p>';
+                step.className = 'step error';
+            }
+            
+            btn.disabled = false;
+            btn.textContent = 'Verify Basic Setup';
+        }
+        
+        async function verifyAttendanceSetup() {
+            const btn = document.getElementById('verify-attendance-btn');
+            const result = document.getElementById('attendance-result');
+            const step = document.getElementById('step3');
+            
+            btn.disabled = true;
+            btn.textContent = 'Verifying...';
+            step.className = 'step running';
+            
+            const attendanceTables = ['classes', 'student_groups', 'attendance_sessions', 'attendance_records'];
+            let allExist = true;
+            
+            for (const table of attendanceTables) {
+                try {
+                    const { data, error } = await supabase.from(table).select('*').limit(1);
+                    if (error && (error.message.includes('does not exist') || error.code === 'PGRST116')) {
+                        allExist = false;
+                        break;
+                    }
+                } catch (e) {
+                    allExist = false;
+                    break;
+                }
+            }
+            
+            if (allExist) {
+                result.innerHTML = '<p class="success">✅ All attendance tables exist! Proceed to Step 4.</p>';
+                step.className = 'step completed';
+            } else {
+                result.innerHTML = '<p class="error">❌ Some attendance tables are missing. Please run the attendance SQL in Supabase first.</p>';
+                step.className = 'step error';
+            }
+            
+            btn.disabled = false;
+            btn.textContent = 'Verify Attendance Setup';
+        }
+        
+        async function runFinalVerification() {
+            const btn = document.getElementById('final-btn');
+            const result = document.getElementById('final-result');
+            const step = document.getElementById('step4');
+            
+            btn.disabled = true;
+            btn.textContent = 'Running Final Check...';
+            step.className = 'step running';
+            
+            const allTables = ['profiles', 'students', 'faculty', 'admins', 'classes', 'student_groups', 'attendance_sessions', 'attendance_records'];
+            const results = [];
+            let allGood = true;
+            
+            for (const table of allTables) {
+                try {
+                    const { data, error } = await supabase.from(table).select('*').limit(1);
+                    if (error && (error.message.includes('does not exist') || error.code === 'PGRST116')) {
+                        results.push(`❌ ${table}`);
+                        allGood = false;
+                    } else {
+                        results.push(`✅ ${table}`);
+                    }
+                } catch (e) {
+                    results.push(`❌ ${table} - ${e.message}`);
+                    allGood = false;
+                }
+            }
+            
+            if (allGood) {
+                result.innerHTML = `
+                    <div class="success">
+                        <h4>🎉 Database Setup Complete!</h4>
+                        <p>All required tables exist. Your system is ready to use!</p>
+                    </div>
+                `;
+                step.className = 'step completed';
+            } else {
+                result.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Setup Incomplete</h4>
+                        <p>Missing tables: ${results.filter(r => r.includes('❌')).join(', ')}</p>
+                    </div>
+                `;
+                step.className = 'step error';
+            }
+            
+            btn.disabled = false;
+            btn.textContent = 'Run Final Verification';
+        }
+        
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = elementId === 'attendance-sql' ? 
+                'Copy the full content from the attendance-database-setup.sql file' : 
+                element.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✅ Copied!';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 2000);
+            });
+        }
+        
+        function openTestPages() {
+            const urls = [
+                'login-test.html',
+                'database-status.html',
+                'sample-data.html'
+            ];
+            
+            urls.forEach(url => {
+                window.open(url, '_blank');
+            });
+            
+            document.getElementById('test-result').innerHTML += 
+                '<p class="success">✅ Test pages opened in new tabs!</p>';
+        }
+        
+        // Auto-check status on load
+        window.addEventListener('load', checkCurrentStatus);
+    </script>
+</body>
+</html>

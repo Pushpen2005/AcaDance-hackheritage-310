@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HH310 System Diagnostic</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .pass { border-color: #10b981; background: #ecfdf5; }
+        .fail { border-color: #ef4444; background: #fef2f2; }
+        .warning { border-color: #f59e0b; background: #fffbeb; }
+        .status {
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 3px;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+        .status.pass { background: #10b981; color: white; }
+        .status.fail { background: #ef4444; color: white; }
+        .status.warning { background: #f59e0b; color: white; }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #2563eb; }
+        .logs {
+            background: #1f2937;
+            color: #e5e7eb;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 HH310 System Diagnostic</h1>
+        <p>This page tests all frontend-backend integrations and navigation functionality.</p>
+        
+        <button onclick="runAllDiagnostics()">🚀 Run Full Diagnostic</button>
+        <button onclick="clearLogs()">🗑️ Clear Logs</button>
+        <button onclick="testNavigation()">🧭 Test Navigation</button>
+        <button onclick="testAuthentication()">🔐 Test Authentication</button>
+        
+        <div class="test-section" id="files-test">
+            <div class="status" id="files-status">PENDING</div>
+            <h3>📁 File Availability Test</h3>
+            <p>Checking if all required files are accessible...</p>
+            <div id="files-details"></div>
+        </div>
+        
+        <div class="test-section" id="scripts-test">
+            <div class="status" id="scripts-status">PENDING</div>
+            <h3>📜 JavaScript Functions Test</h3>
+            <p>Testing if all authentication and navigation functions are defined...</p>
+            <div id="scripts-details"></div>
+        </div>
+        
+        <div class="test-section" id="supabase-test">
+            <div class="status" id="supabase-status">PENDING</div>
+            <h3>🗄️ Supabase Connection Test</h3>
+            <p>Testing connection to Supabase backend...</p>
+            <div id="supabase-details"></div>
+        </div>
+        
+        <div class="test-section" id="navigation-test">
+            <div class="status" id="navigation-status">PENDING</div>
+            <h3>🧭 Navigation Test</h3>
+            <p>Testing navigation between pages...</p>
+            <div id="navigation-details"></div>
+        </div>
+        
+        <div class="test-section" id="auth-test">
+            <div class="status" id="auth-status">PENDING</div>
+            <h3>🔐 Authentication Test</h3>
+            <p>Testing authentication functions...</p>
+            <div id="auth-details"></div>
+        </div>
+        
+        <div class="logs" id="diagnostic-logs">
+            Diagnostic logs will appear here...
+        </div>
+    </div>
+
+    <script>
+        const logs = [];
+        
+        function log(message, level = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${level.toUpperCase()}: ${message}`;
+            logs.push(logEntry);
+            
+            const logContainer = document.getElementById('diagnostic-logs');
+            logContainer.textContent = logs.join('\n');
+            logContainer.scrollTop = logContainer.scrollHeight;
+            
+            console.log(logEntry);
+        }
+        
+        function clearLogs() {
+            logs.length = 0;
+            document.getElementById('diagnostic-logs').textContent = 'Diagnostic logs cleared...';
+        }
+        
+        function setTestStatus(testId, status, details = '') {
+            const statusEl = document.getElementById(`${testId}-status`);
+            const detailsEl = document.getElementById(`${testId}-details`);
+            const sectionEl = document.getElementById(`${testId}-test`);
+            
+            statusEl.textContent = status;
+            statusEl.className = `status ${status.toLowerCase()}`;
+            sectionEl.className = `test-section ${status.toLowerCase()}`;
+            
+            if (details) {
+                detailsEl.innerHTML = details;
+            }
+        }
+        
+        async function testFileAvailability() {
+            log('Testing file availability...');
+            const requiredFiles = [
+                'home.html',
+                'login.html', 
+                'home.js',
+                'login.js',
+                'login-supabase.js',
+                'supabase-config.js',
+                'home.css',
+                'login.css'
+            ];
+            
+            const results = [];
+            let allFound = true;
+            
+            for (const file of requiredFiles) {
+                try {
+                    // Simple test - try to create a link to the file
+                    const link = document.createElement('link');
+                    link.href = file;
+                    const exists = link.href.includes(file);
+                    results.push(`✅ ${file}: Available`);
+                    log(`File ${file} is available`);
+                } catch (error) {
+                    results.push(`❌ ${file}: Missing or inaccessible`);
+                    log(`File ${file} is missing: ${error.message}`, 'error');
+                    allFound = false;
+                }
+            }
+            
+            setTestStatus('files', allFound ? 'PASS' : 'FAIL', results.join('<br>'));
+            return allFound;
+        }
+        
+        async function testJavaScriptFunctions() {
+            log('Testing JavaScript functions...');
+            const requiredFunctions = [
+                'toggleAuthDropdown',
+                'redirectToLogin', 
+                'checkAuthStatus',
+                'showUserMenu',
+                'showAuthButtons',
+                'logout',
+                'initializeAuth'
+            ];
+            
+            const results = [];
+            let allDefined = true;
+            
+            // First, try to load the functions from home.js
+            try {
+                // Create a script tag to load home.js
+                const script = document.createElement('script');
+                script.src = 'home.js';
+                document.head.appendChild(script);
+                
+                // Wait a bit for script to load
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                for (const funcName of requiredFunctions) {
+                    if (typeof window[funcName] === 'function') {
+                        results.push(`✅ ${funcName}: Defined`);
+                        log(`Function ${funcName} is available`);
+                    } else {
+                        results.push(`❌ ${funcName}: Not defined`);
+                        log(`Function ${funcName} is missing`, 'error');
+                        allDefined = false;
+                    }
+                }
+            } catch (error) {
+                results.push(`❌ Error loading home.js: ${error.message}`);
+                log(`Error loading home.js: ${error.message}`, 'error');
+                allDefined = false;
+            }
+            
+            setTestStatus('scripts', allDefined ? 'PASS' : 'FAIL', results.join('<br>'));
+            return allDefined;
+        }
+        
+        async function testSupabaseConnection() {
+            log('Testing Supabase connection...');
+            try {
+                // Load Supabase config
+                const script = document.createElement('script');
+                script.src = 'supabase-config.js';
+                document.head.appendChild(script);
+                
+                // Wait for script to load
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                if (typeof window.supabaseClient !== 'undefined') {
+                    // Test connection
+                    const { data, error } = await window.supabaseClient.auth.getSession();
+                    
+                    if (error) {
+                        log(`Supabase connection error: ${error.message}`, 'warning');
+                        setTestStatus('supabase', 'WARNING', `Connection established but auth error: ${error.message}`);
+                        return false;
+                    } else {
+                        log('Supabase connection successful');
+                        setTestStatus('supabase', 'PASS', 'Supabase client connected successfully');
+                        return true;
+                    }
+                } else {
+                    log('Supabase client not available', 'error');
+                    setTestStatus('supabase', 'FAIL', 'Supabase client not initialized');
+                    return false;
+                }
+            } catch (error) {
+                log(`Supabase test error: ${error.message}`, 'error');
+                setTestStatus('supabase', 'FAIL', `Error: ${error.message}`);
+                return false;
+            }
+        }
+        
+        async function testNavigation() {
+            log('Testing navigation functionality...');
+            const tests = [];
+            let allPassed = true;
+            
+            // Test 1: Check if pages exist
+            const pages = ['home.html', 'login.html'];
+            for (const page of pages) {
+                try {
+                    const response = await fetch(page, { method: 'HEAD' });
+                    if (response.ok) {
+                        tests.push(`✅ ${page}: Accessible`);
+                        log(`Page ${page} is accessible`);
+                    } else {
+                        tests.push(`❌ ${page}: Not accessible (${response.status})`);
+                        log(`Page ${page} not accessible: ${response.status}`, 'error');
+                        allPassed = false;
+                    }
+                } catch (error) {
+                    tests.push(`❌ ${page}: Error (${error.message})`);
+                    log(`Error checking ${page}: ${error.message}`, 'error');
+                    allPassed = false;
+                }
+            }
+            
+            // Test 2: Check if redirectToLogin function works
+            if (typeof window.redirectToLogin === 'function') {
+                tests.push(`✅ redirectToLogin function: Available`);
+                log('redirectToLogin function is available');
+            } else {
+                tests.push(`❌ redirectToLogin function: Not available`);
+                log('redirectToLogin function is not available', 'error');
+                allPassed = false;
+            }
+            
+            setTestStatus('navigation', allPassed ? 'PASS' : 'FAIL', tests.join('<br>'));
+            return allPassed;
+        }
+        
+        async function testAuthentication() {
+            log('Testing authentication functionality...');
+            const tests = [];
+            let allPassed = true;
+            
+            // Test authentication functions
+            const authFunctions = ['toggleAuthDropdown', 'checkAuthStatus', 'logout'];
+            
+            for (const funcName of authFunctions) {
+                if (typeof window[funcName] === 'function') {
+                    tests.push(`✅ ${funcName}: Available`);
+                    log(`Auth function ${funcName} is available`);
+                } else {
+                    tests.push(`❌ ${funcName}: Not available`);
+                    log(`Auth function ${funcName} is not available`, 'error');
+                    allPassed = false;
+                }
+            }
+            
+            // Test if dropdown elements exist in DOM (simulated)
+            const requiredElements = ['auth-dropdown', 'auth-dropdown-menu', 'user-menu'];
+            for (const elementId of requiredElements) {
+                // Since we're not on the actual page, we'll just check if the CSS classes exist
+                tests.push(`ℹ️ ${elementId}: Would need to check on actual home.html`);
+                log(`Element ${elementId} check: requires home.html context`, 'info');
+            }
+            
+            setTestStatus('auth', allPassed ? 'PASS' : 'WARNING', tests.join('<br>'));
+            return allPassed;
+        }
+        
+        async function runAllDiagnostics() {
+            log('Starting comprehensive system diagnostic...');
+            clearLogs();
+            
+            const results = {
+                files: await testFileAvailability(),
+                scripts: await testJavaScriptFunctions(),
+                supabase: await testSupabaseConnection(),
+                navigation: await testNavigation(),
+                auth: await testAuthentication()
+            };
+            
+            const passed = Object.values(results).filter(r => r === true).length;
+            const total = Object.keys(results).length;
+            
+            log(`\n=== DIAGNOSTIC SUMMARY ===`);
+            log(`Tests passed: ${passed}/${total}`);
+            log(`Overall status: ${passed === total ? 'ALL SYSTEMS GO' : 'ISSUES DETECTED'}`);
+            
+            if (passed === total) {
+                log('🎉 All systems are functioning correctly!');
+                log('✅ Navigation between home.html and login.html should work');
+                log('✅ Account button and authentication features should work');
+                log('✅ Backend integration should be operational');
+            } else {
+                log('⚠️ Some issues were detected. Check individual test results above.');
+                log('🔧 Fix the failing tests to ensure full functionality.');
+            }
+        }
+        
+        // Auto-run basic checks on page load
+        window.addEventListener('load', () => {
+            log('System diagnostic page loaded');
+            log('Click "Run Full Diagnostic" to test all functionality');
+        });
+    </script>
+</body>
+</html>

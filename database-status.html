@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Status Check</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+            margin: 20px; 
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status-item { 
+            margin: 15px 0; 
+            padding: 15px; 
+            border-radius: 6px;
+            border-left: 4px solid #ccc;
+        }
+        .success { 
+            background: #f0f9ff; 
+            border-left-color: #10b981; 
+            color: #065f46;
+        }
+        .error { 
+            background: #fef2f2; 
+            border-left-color: #ef4444; 
+            color: #7f1d1d;
+        }
+        .warning { 
+            background: #fffbeb; 
+            border-left-color: #f59e0b; 
+            color: #92400e;
+        }
+        .loading {
+            background: #f8fafc;
+            border-left-color: #6b7280;
+            color: #374151;
+        }
+        button { 
+            background: #3b82f6; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            margin: 10px 5px 10px 0;
+        }
+        button:hover { background: #2563eb; }
+        button:disabled { background: #9ca3af; cursor: not-allowed; }
+        .sql-block {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        h1 { color: #1f2937; }
+        h2 { color: #374151; margin-top: 30px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛠️ Database Setup Status</h1>
+        
+        <button onclick="checkAllTables()" id="check-btn">Check Database Status</button>
+        <button onclick="showSetupInstructions()" id="setup-btn">Show Setup Instructions</button>
+        
+        <div id="status-container">
+            <div class="loading">Click "Check Database Status" to verify your setup</div>
+        </div>
+
+        <div id="setup-instructions" style="display: none;">
+            <h2>📋 Setup Instructions</h2>
+            <p><strong>If any tables are missing, follow these steps:</strong></p>
+            
+            <h3>Step 1: Basic Tables</h3>
+            <p>Go to Supabase → SQL Editor and run this:</p>
+            <div class="sql-block">-- Run database-setup.sql
+-- This creates: profiles, students, faculty, admins tables</div>
+            
+            <h3>Step 2: Attendance Tables</h3>
+            <p>Then run this in SQL Editor:</p>
+            <div class="sql-block">-- Run attendance-database-setup.sql  
+-- This creates: student_groups, classes, attendance_sessions, etc.</div>
+            
+            <h3>Step 3: Verify</h3>
+            <p>Click "Check Database Status" again to verify all tables exist.</p>
+        </div>
+    </div>
+    
+    <script src="supabase-config.js"></script>
+    <script>
+        const supabase = window.supabaseClient;
+        
+        const requiredTables = [
+            { name: 'profiles', source: 'database-setup.sql', description: 'User profiles' },
+            { name: 'students', source: 'database-setup.sql', description: 'Student data' },
+            { name: 'faculty', source: 'database-setup.sql', description: 'Faculty data' },
+            { name: 'admins', source: 'database-setup.sql', description: 'Admin data' },
+            { name: 'student_groups', source: 'attendance-database-setup.sql', description: 'Student groups for attendance' },
+            { name: 'classes', source: 'attendance-database-setup.sql', description: 'Class definitions' },
+            { name: 'attendance_sessions', source: 'attendance-database-setup.sql', description: 'Attendance sessions' },
+            { name: 'attendance_records', source: 'attendance-database-setup.sql', description: 'Individual attendance records' }
+        ];
+        
+        async function checkTable(tableName) {
+            try {
+                const { data, error } = await supabase
+                    .from(tableName)
+                    .select('*')
+                    .limit(1);
+                
+                if (error) {
+                    // Check if it's a "relation does not exist" error
+                    if (error.message.includes('does not exist') || error.code === 'PGRST116') {
+                        return { exists: false, error: `Table "${tableName}" does not exist` };
+                    }
+                    return { exists: false, error: error.message };
+                }
+                
+                return { exists: true, rowCount: data ? data.length : 0 };
+            } catch (e) {
+                return { exists: false, error: e.message };
+            }
+        }
+        
+        async function checkAllTables() {
+            const container = document.getElementById('status-container');
+            const btn = document.getElementById('check-btn');
+            
+            btn.disabled = true;
+            btn.textContent = 'Checking...';
+            
+            container.innerHTML = '<div class="loading">Checking database tables...</div>';
+            
+            let allGood = true;
+            let results = [];
+            
+            for (const table of requiredTables) {
+                const result = await checkTable(table.name);
+                results.push({
+                    ...table,
+                    ...result
+                });
+                
+                if (!result.exists) allGood = false;
+            }
+            
+            // Display results
+            let html = '';
+            
+            if (allGood) {
+                html += '<div class="success">✅ All required tables exist! Your database is properly set up.</div>';
+            } else {
+                html += '<div class="error">❌ Some tables are missing. Please run the required SQL files.</div>';
+            }
+            
+            html += '<h2>Table Status:</h2>';
+            
+            results.forEach(table => {
+                if (table.exists) {
+                    html += `<div class="success">
+                        ✅ <strong>${table.name}</strong> - ${table.description}
+                        <br><small>Source: ${table.source}</small>
+                    </div>`;
+                } else {
+                    html += `<div class="error">
+                        ❌ <strong>${table.name}</strong> - ${table.description}
+                        <br><small>Missing - needs ${table.source}</small>
+                        <br><em>${table.error}</em>
+                    </div>`;
+                }
+            });
+            
+            container.innerHTML = html;
+            
+            btn.disabled = false;
+            btn.textContent = 'Check Database Status';
+        }
+        
+        function showSetupInstructions() {
+            const instructions = document.getElementById('setup-instructions');
+            instructions.style.display = instructions.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        // Check connection on load
+        window.addEventListener('load', async () => {
+            try {
+                await supabase.auth.getSession();
+                console.log('✅ Supabase connected');
+            } catch (e) {
+                document.getElementById('status-container').innerHTML = 
+                    '<div class="error">❌ Failed to connect to Supabase: ' + e.message + '</div>';
+            }
+        });
+    </script>
+</body>
+</html>

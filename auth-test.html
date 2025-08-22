@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth System Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Testing Authentication System</h1>
+    <div id="status"></div>
+    
+    <script src="supabase-config.js"></script>
+    <script>
+        async function testAuth() {
+            const statusDiv = document.getElementById('status');
+            
+            // Test 1: Check if Supabase client is initialized
+            if (window.supabaseClient) {
+                statusDiv.innerHTML += '<p>✅ Supabase client initialized</p>';
+            } else {
+                statusDiv.innerHTML += '<p>❌ Supabase client not found</p>';
+                return;
+            }
+            
+            // Test 2: Check connection
+            try {
+                const { data, error } = await window.supabaseClient.auth.getSession();
+                if (error) {
+                    statusDiv.innerHTML += '<p>❌ Auth connection error: ' + error.message + '</p>';
+                } else {
+                    statusDiv.innerHTML += '<p>✅ Auth connection successful</p>';
+                }
+            } catch (e) {
+                statusDiv.innerHTML += '<p>❌ Connection test failed: ' + e.message + '</p>';
+            }
+            
+            // Test 3: Check if profiles table exists
+            try {
+                const { data, error } = await window.supabaseClient
+                    .from('profiles')
+                    .select('*')
+                    .limit(1);
+                
+                if (error) {
+                    statusDiv.innerHTML += '<p>❌ Profiles table error: ' + error.message + '</p>';
+                } else {
+                    statusDiv.innerHTML += '<p>✅ Profiles table accessible</p>';
+                }
+            } catch (e) {
+                statusDiv.innerHTML += '<p>❌ Profiles table test failed: ' + e.message + '</p>';
+            }
+        }
+        
+        // Run test when page loads
+        window.addEventListener('load', testAuth);
+    </script>
+</body>
+</html>

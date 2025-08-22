@@ -1996,7 +1996,7 @@
             <button class="btn btn--outline" onclick="exportTimetable()">Export PDF</button>
             <button class="btn btn--outline" onclick="printTimetable()">Print</button>
           </div>
-          <div class="timetable-grid" id="timetable-grid" aria-label="Weekly Timetable Grid" role="grid">
+          <div class="timetable-grid" id="timetable-grid">
             <!-- Timetable grid will be populated by JS -->
           </div>
         </div>
@@ -2051,7 +2051,7 @@
         </div>
 
         <!-- QR Code Section -->
-        <div class="qr-code-section hidden" id="qr-code-section" aria-label="QR Code Attendance Section" role="region">
+        <div class="qr-code-section hidden" id="qr-code-section">
           <div class="qr-code-display">
             <div class="qr-code-placeholder">
               <i class="fas fa-qrcode" style="font-size: 4rem; color: var(--gray-400);"></i>
@@ -2095,7 +2095,7 @@
             </div>
           </div>
           
-          <div class="students-attendance-list" id="students-attendance-list" aria-label="Students Attendance List" role="list">
+          <div class="students-attendance-list" id="students-attendance-list">
             <div class="loading-placeholder">
               <i class="fas fa-spinner fa-spin"></i>
               <p>Loading students...</p>
@@ -3047,29 +3047,6 @@
 
         console.log(`Generated ${slots.length} slots with ${conflicts.length} conflicts using ${algorithm} algorithm`);
         return slots;
-      }
-
-      // Enhanced conflict detection function
-      detectConflicts(newSlot, existingSlots) {
-        const conflicts = [];
-        
-        for (const slot of existingSlots) {
-          if (slot.day_of_week === newSlot.day_of_week && slot.start_time === newSlot.start_time) {
-            if (slot.teacher_id === newSlot.teacher_id) {
-              conflicts.push({
-                type: 'teacher',
-                message: `Teacher conflict: Teacher is already scheduled at this time`
-              });
-            }
-            if (slot.classroom_id === newSlot.classroom_id) {
-              conflicts.push({
-                type: 'classroom',
-                message: `Classroom conflict: Classroom is already booked at this time`
-              });
-            }
-          }
-        }
-        return conflicts;
       }
 
       // Real-time synchronization methods

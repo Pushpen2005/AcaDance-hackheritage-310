@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .error { color: red; }
+        .success { color: green; }
+        input, button { margin: 5px; padding: 8px; }
+        button { background: #007cba; color: white; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Authentication Test</h1>
+    
+    <div class="test-section">
+        <h3>Test Login</h3>
+        <input type="email" id="test-email" placeholder="Email" value="test@example.com">
+        <input type="password" id="test-password" placeholder="Password" value="password123">
+        <button onclick="testLogin()">Test Login</button>
+        <div id="login-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test Signup</h3>
+        <input type="email" id="signup-email" placeholder="Email" value="newuser@example.com">
+        <input type="password" id="signup-password" placeholder="Password" value="password123">
+        <input type="text" id="signup-name" placeholder="Full Name" value="Test User">
+        <select id="signup-role">
+            <option value="student">Student</option>
+            <option value="faculty">Faculty</option>
+            <option value="admin">Admin</option>
+        </select>
+        <button onclick="testSignup()">Test Signup</button>
+        <div id="signup-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Current Session</h3>
+        <button onclick="checkSession()">Check Session</button>
+        <div id="session-result"></div>
+    </div>
+    
+    <script src="supabase-config.js"></script>
+    <script>
+        const supabase = window.supabaseClient;
+        
+        async function testLogin() {
+            const email = document.getElementById('test-email').value;
+            const password = document.getElementById('test-password').value;
+            const resultDiv = document.getElementById('login-result');
+            
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+                
+                if (error) {
+                    resultDiv.innerHTML = `<p class="error">Login Error: ${error.message}</p>`;
+                } else {
+                    resultDiv.innerHTML = `<p class="success">Login Successful! User ID: ${data.user.id}</p>`;
+                }
+            } catch (e) {
+                resultDiv.innerHTML = `<p class="error">Exception: ${e.message}</p>`;
+            }
+        }
+        
+        async function testSignup() {
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const name = document.getElementById('signup-name').value;
+            const role = document.getElementById('signup-role').value;
+            const resultDiv = document.getElementById('signup-result');
+            
+            try {
+                const { data, error } = await supabase.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: {
+                        data: {
+                            full_name: name,
+                            role: role
+                        }
+                    }
+                });
+                
+                if (error) {
+                    resultDiv.innerHTML = `<p class="error">Signup Error: ${error.message}</p>`;
+                } else {
+                    resultDiv.innerHTML = `<p class="success">Signup Successful! User ID: ${data.user.id}</p>`;
+                    
+                    // Try to create profile
+                    if (data.user) {
+                        const { error: profileError } = await supabase
+                            .from('profiles')
+                            .upsert({
+                                id: data.user.id,
+                                email: email,
+                                full_name: name,
+                                role: role
+                            });
+                            
+                        if (profileError) {
+                            resultDiv.innerHTML += `<p class="error">Profile Error: ${profileError.message}</p>`;
+                        } else {
+                            resultDiv.innerHTML += `<p class="success">Profile created successfully!</p>`;
+                        }
+                    }
+                }
+            } catch (e) {
+                resultDiv.innerHTML = `<p class="error">Exception: ${e.message}</p>`;
+            }
+        }
+        
+        async function checkSession() {
+            const resultDiv = document.getElementById('session-result');
+            
+            try {
+                const { data, error } = await supabase.auth.getSession();
+                
+                if (error) {
+                    resultDiv.innerHTML = `<p class="error">Session Error: ${error.message}</p>`;
+                } else if (data.session) {
+                    resultDiv.innerHTML = `<p class="success">Active Session: ${data.session.user.email}</p>`;
+                } else {
+                    resultDiv.innerHTML = `<p>No active session</p>`;
+                }
+            } catch (e) {
+                resultDiv.innerHTML = `<p class="error">Exception: ${e.message}</p>`;
+            }
+        }
+        
+        // Check session on load
+        window.addEventListener('load', checkSession);
+    </script>
+</body>
+</html>
