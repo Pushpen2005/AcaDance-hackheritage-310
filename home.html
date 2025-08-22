@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HH310: Timetable Creator and Automated Attendance System</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Supabase Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* Basic Responsive Layout */
+    body, html { margin:0; padding:0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f7; }
+    .navbar { display:flex; justify-content:space-between; align-items:center; padding:15px 25px; background:#282a36; color:#fff;}
+    .navbar-brand h2 { margin:0; font-size:1.5rem;}
+    .nav-tabs { display:flex; gap:10px;}
+    .nav-tab { background:none; border:none; color:#fff; padding:10px 18px; cursor:pointer; font-size:1rem;}
+    .nav-tab.active { background:#43455a; border-radius:6px;}
+    .auth-buttons { display:flex; gap:8px;}
+    .btn--auth { background:#1b8fc3; color:#fff; border:none; border-radius:4px; padding:7px 15px; cursor:pointer;}
+    .btn--auth:hover { background:#156a95;}
+    .container { max-width:1200px; margin:32px auto; background:#fff; border-radius:8px; box-shadow:0 2px 6px rgba(80,80,90,.07); padding:32px; }
+    .module { display:none; }
+    .module.active { display:block; }
+    h1,h3,h4 { margin-top:0;}
+
+    /* Responsive */
+    @media(max-width:900px){
+      .container { padding:15px; }
+      .metrics-grid, .dashboard-content, .reports-grid, .students-grid { flex-flow:column; }
+    }
+    @media(max-width:600px){
+      .navbar { flex-direction:column; align-items:flex-start; }
+      .nav-tabs { flex-wrap:wrap; }
+    }
+
+    /* Dashboard Example */
+    .metrics-grid { display:flex; gap:20px; margin-bottom:32px;}
+    .metric-card { flex:1; background:#e7ebf9; border-radius:8px; padding:24px; text-align:center;}
+    .module-header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;}
+    .dashboard-content { display:flex; gap:40px; flex-wrap:wrap;}
+    .quick-actions, .todays-schedule { min-width:260px; flex:1;}
+    .recent-activities { margin-top:40px;}
+    .activity-list { background:#f1f2f6; padding:16px; border-radius:6px; }
+
+    /* Timetable Example */
+    .setup-grid { display: flex; gap:22px; flex-wrap: wrap; }
+    .setup-card { flex:1; background:#f7f7fa; padding:18px; margin-bottom:12px; border-radius:8px;}
+    .timetable-tabs, .attendance-tabs, .reports-tabs { display: flex; gap: 10px; margin-bottom:20px;}
+    .timetable-tab, .attendance-tab, .reports-tab { border:none; background:#e7ebf9; padding:10px 18px; border-radius:6px; cursor:pointer;}
+    .timetable-tab.active, .attendance-tab.active, .reports-tab.active { background:#43455a; color:#fff; }
+    /* ...add styles for other sections and forms as needed... */
+
+    
+    .modal { position:fixed; top:0; left:0; width:100vw; height:100vh; display:flex; align-items:center; justify-content:center; background:rgba(31,32,44,0.22); z-index:999; }
+    .modal.hidden { display:none; }
+    .modal-content { background:#fff; border-radius:8px; padding:32px; min-width:290px; max-width: 400px; box-shadow:0 4px 18px rgba(60,60,70,.15);}
+    .modal-header { display:flex; justify-content:space-between; align-items:center; }
+    .modal-close { background:none; border:none; font-size:1.4em; cursor:pointer;}
+    .modal-footer { display:flex; justify-content:flex-end; gap:16px; margin-top:24px;}
+    .form-group { margin-bottom:20px;}
+    .form-label { display:block; margin-bottom:6px; font-weight:500;}
+    .form-control { width:100%; padding:9px 11px; border-radius:4px; border:1px solid #cfd2e1;}
+    select.form-control { min-width:100px;}
+    .btn { border:none; border-radius:4px; padding:9px 22px; cursor:pointer; }
+    .btn--primary { background:#1b8fc3; color:#fff;}
+    .btn--secondary { background:#ebebeb; color:#222;}
+    .btn--outline { background:none; border:1px solid #1b8fc3; color: #1b8fc3;}
+    .btn--sm { padding:5px 14px; font-size:.96em;}
+
+    /* More styles can be added for inner module cards/lists/forms. */
+    
+    /* User Menu Styles */
+    .user-menu {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    
+    .user-menu.hidden {
+      display: none;
+    }
+    
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      padding: 0.5rem;
+      border-radius: 8px;
+      transition: background-color 0.2s;
+    }
+    
+    .user-info:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    
+    .user-name {
+      color: white;
+      font-weight: 500;
+      font-size: 0.9rem;
+    }
+    
+    .user-info i {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 0.8rem;
+      transition: transform 0.2s;
+    }
+    
+    .user-info.active i {
+      transform: rotate(180deg);
+    }
+    
+    .dropdown-menu {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      min-width: 200px;
+      padding: 0.5rem 0;
+      z-index: 1000;
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: all 0.2s ease;
+      pointer-events: none;
+    }
+    
+    .dropdown-menu.show {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: all;
+    }
+    
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      color: #374151;
+      text-decoration: none;
+      transition: background-color 0.2s;
+    }
+    
+    .dropdown-item:hover {
+      background: #f3f4f6;
+      color: #1f2937;
+    }
+    
+    .dropdown-item i {
+      width: 16px;
+      color: #6b7280;
+    }
+    
+    .dropdown-divider {
+      height: 1px;
+      background: #e5e7eb;
+      margin: 0.5rem 0;
+    }
+    
+    /* Auth button adjustments when user is logged in */
+    .auth-buttons .btn--auth.hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <h2>HH310 Academic System</h2>
+    </div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" data-tab="dashboard">Dashboard</button>
+      <button class="nav-tab" data-tab="timetable">Timetable Management</button>
+      <button class="nav-tab" data-tab="attendance">Attendance Tracking</button>
+      <button class="nav-tab" data-tab="reports">Reports</button>
+      <button class="nav-tab" data-tab="settings">Settings</button>
+    </div>
+    <div class="auth-buttons">
+      <button class="btn btn--auth" id="login-btn" onclick="redirectToLogin('login')">Login</button>
+      <button class="btn btn--auth" id="signup-btn" onclick="redirectToLogin('signup')">Sign Up</button>
+      <div class="user-menu hidden" id="user-menu">
+        <div class="user-info">
+          <img src="https://via.placeholder.com/40x40" alt="Profile" class="user-avatar" id="user-avatar">
+          <span class="user-name" id="user-name">User Name</span>
+          <i class="fas fa-chevron-down"></i>
+        </div>
+        <div class="dropdown-menu" id="dropdown-menu">
+          <a href="#" class="dropdown-item" onclick="showProfile()">
+            <i class="fas fa-user"></i> Profile
+          </a>
+          <a href="#" class="dropdown-item" onclick="showSettings()">
+            <i class="fas fa-cog"></i> Settings
+          </a>
+          <div class="dropdown-divider"></div>
+          <a href="#" class="dropdown-item" onclick="logout()">
+            <i class="fas fa-sign-out-alt"></i> Logout
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Dashboard Module -->
+  <div class="module active" id="dashboard-module">
+    <div class="container">
+      <div class="module-header">
+        <h1>Dashboard</h1>
+        <div class="current-time">
+          <span id="current-date"></span>
+          <span id="current-time"></span>
+        </div>
+      </div>
+      <!-- Key Metrics -->
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-value" id="total-classes">0</div>
+          <div class="metric-label">Total Classes Scheduled</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value" id="attendance-rate">0%</div>
+          <div class="metric-label">Overall Attendance Rate</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value" id="active-teachers">0</div>
+          <div class="metric-label">Active Teachers</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value" id="total-students">0</div>
+          <div class="metric-label">Total Students</div>
+        </div>
+      </div>
+      <!-- Quick Actions and Today's Schedule -->
+      <div class="dashboard-content">
+        <div class="quick-actions">
+          <h3>Quick Actions</h3>
+          <div class="action-buttons">
+            <button class="btn btn--primary" onclick="switchTab('timetable')">Generate Timetable</button>
+            <button class="btn btn--secondary" onclick="switchTab('attendance')">Mark Attendance</button>
+            <button class="btn btn--outline" onclick="switchTab('reports')">View Reports</button>
+          </div>
+        </div>
+        <div class="todays-schedule">
+          <h3>Today's Schedule</h3>
+          <div id="schedule-list" class="schedule-list"></div>
+        </div>
+      </div>
+      <!-- Recent Activities -->
+      <div class="recent-activities">
+        <h3>Recent Activities</h3>
+        <div class="activity-list" id="activity-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Timetable Management Module -->
+  <div class="module" id="timetable-module">
+    <div class="container">
+      <div class="module-header">
+        <h1>Timetable Management</h1>
+        <button class="btn btn--primary" id="generate-timetable-btn">Generate Timetable</button>
+      </div>
+      <div class="timetable-tabs">
+        <button class="timetable-tab active" data-section="setup">Setup</button>
+        <button class="timetable-tab" data-section="constraints">Constraints</button>
+        <button class="timetable-tab" data-section="generation">Generation</button>
+        <button class="timetable-tab" data-section="view">View Timetable</button>
+      </div>
+      <!-- Setup Section -->
+      <div class="timetable-section active" id="setup-section">
+        <div class="setup-grid">
+          <!-- Subjects Management -->
+          <div class="setup-card">
+            <h3>Subjects</h3>
+            <div class="form-group">
+              <input type="text" class="form-control" id="subject-name" placeholder="Subject Name">
+              <input type="text" class="form-control" id="subject-code" placeholder="Subject Code">
+              <input type="number" class="form-control" id="subject-credits" placeholder="Credits">
+              <input type="number" class="form-control" id="subject-duration" placeholder="Duration (min)">
+              <button class="btn btn--secondary" onclick="addSubject()">Add Subject</button>
+            </div>
+            <div class="data-list" id="subjects-list"></div>
+          </div>
+          <!-- Teachers Management -->
+          <div class="setup-card">
+            <h3>Teachers</h3>
+            <div class="form-group">
+              <input type="text" class="form-control" id="teacher-name" placeholder="Teacher Name">
+              <input type="text" class="form-control" id="teacher-specialization" placeholder="Specialization">
+              <input type="number" class="form-control" id="teacher-max-hours" placeholder="Max Hours/Week">
+              <button class="btn btn--secondary" onclick="addTeacher()">Add Teacher</button>
+            </div>
+            <div class="data-list" id="teachers-list"></div>
+          </div>
+          <!-- Classrooms Management -->
+          <div class="setup-card">
+            <h3>Classrooms</h3>
+            <div class="form-group">
+              <input type="text" class="form-control" id="room-name" placeholder="Room Name">
+              <input type="number" class="form-control" id="room-capacity" placeholder="Capacity">
+              <input type="text" class="form-control" id="room-type" placeholder="Room Type">
+              <button class="btn btn--secondary" onclick="addRoom()">Add Room</button>
+            </div>
+            <div class="data-list" id="rooms-list"></div>
+          </div>
+          <!-- Student Groups -->
+          <div class="setup-card">
+            <h3>Student Groups</h3>
+            <div class="form-group">
+              <input type="text" class="form-control" id="group-name" placeholder="Group Name">
+              <input type="number" class="form-control" id="group-size" placeholder="Group Size">
+              <input type="text" class="form-control" id="group-program" placeholder="Program">
+              <button class="btn btn--secondary" onclick="addGroup()">Add Group</button>
+            </div>
+            <div class="data-list" id="groups-list"></div>
+          </div>
+        </div>
+      </div>
+      <!-- Constraints Section -->
+      <div class="timetable-section" id="constraints-section">
+        <div class="constraints-content">
+          <h3>Scheduling Constraints</h3>
+          <div class="constraint-cards">
+            <div class="constraint-card">
+              <h4>Teacher Availability</h4>
+              <div id="teacher-availability-list"></div>
+            </div>
+            <div class="constraint-card">
+              <h4>Room Requirements</h4>
+              <div id="room-requirements-list"></div>
+            </div>
+            <div class="constraint-card">
+              <h4>Subject Frequency</h4>
+              <div id="subject-frequency-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Generation Section -->
+      <div class="timetable-section" id="generation-section">
+        <div class="generation-content">
+          <h3>Timetable Generation</h3>
+          <div class="algorithm-comparison">
+            <h4>Algorithm Performance Comparison</h4>
+            <img src="https://ppl-ai-code-interpreter-files.s3.amazonaws.com/web/direct-files/04df722c09aed5dae4731d3d79bda432/4521d81a-246b-44de-95ec-eccfc3a45f63/8d50302d.png" alt="Algorithm Comparison" class="algorithm-chart">
+          </div>
+          <div class="generation-controls">
+            <div class="algorithm-selection">
+              <label class="form-label">Select Algorithm:</label>
+              <select class="form-control" id="algorithm-select">
+                <option value="genetic">Genetic Algorithm</option>
+                <option value="csp">Constraint Satisfaction Problem</option>
+                <option value="simulated">Simulated Annealing</option>
+                <option value="tabu">Tabu Search</option>
+                <option value="greedy">Greedy/Sequential</option>
+              </select>
+            </div>
+            <button class="btn btn--primary" id="start-generation">Start Generation</button>
+            <div class="generation-progress hidden" id="generation-progress">
+              <div class="progress-bar">
+                <div class="progress-fill"></div>
+              </div>
+              <div class="progress-text">Generating timetable...</div>
+            </div>
+          </div>
+          <div class="conflicts-display" id="conflicts-display"></div>
+        </div>
+      </div>
+      <!-- View Timetable Section -->
+      <div class="timetable-section" id="view-section">
+        <div class="timetable-display">
+          <div class="timetable-controls">
+            <select class="form-control" id="view-group-select">
+              <option value="">Select Group</option>
+            </select>
+            <button class="btn btn--outline" onclick="exportTimetable()">Export PDF</button>
+            <button class="btn btn--outline" onclick="printTimetable()">Print</button>
+          </div>
+          <div class="timetable-grid" id="timetable-grid">
+            <!-- Timetable grid will be populated by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Attendance Tracking Module -->
+  <div class="module" id="attendance-module">
+    <div class="container">
+      <div class="module-header">
+        <h1>Attendance Tracking</h1>
+        <div class="attendance-date">
+          <input type="date" class="form-control" id="attendance-date" value="">
+        </div>
+      </div>
+      <div class="attendance-tabs">
+        <button class="attendance-tab active" data-section="mark">Mark Attendance</button>
+        <button class="attendance-tab" data-section="methods">Tracking Methods</button>
+        <button class="attendance-tab" data-section="analytics">Analytics</button>
+        <button class="attendance-tab" data-section="students">Student Management</button>
+      </div>
+      <!-- Mark Attendance Section -->
+      <div class="attendance-section active" id="mark-section">
+        <div class="attendance-controls">
+          <div class="class-selector">
+            <label class="form-label">Select Class:</label>
+            <select class="form-control" id="class-select">
+              <option value="">Choose a class</option>
+            </select>
+          </div>
+          <div class="group-selector">
+            <label class="form-label">Select Group:</label>
+            <select class="form-control" id="attendance-group-select">
+              <option value="">Choose a group</option>
+            </select>
+          </div>
+        </div>
+        <div class="attendance-methods-buttons">
+          <button class="btn btn--primary" onclick="generateQRCode()">Generate QR Code</button>
+          <button class="btn btn--secondary" onclick="showManualAttendance()">Manual Attendance</button>
+          <button class="btn btn--outline" onclick="bulkUpload()">Bulk Upload</button>
+        </div>
+        <div class="qr-code-section hidden" id="qr-code-section">
+          <div class="qr-code-display">
+            <div class="qr-code-placeholder">QR CODE</div>
+            <p>Students scan this code to mark attendance</p>
+            <div class="qr-stats">
+              <span id="qr-scanned">0</span> students scanned
+            </div>
+          </div>
+        </div>
+        <div class="manual-attendance-section hidden" id="manual-attendance-section">
+          <div class="attendance-actions">
+            <button class="btn btn--sm" onclick="markAllPresent()">Mark All Present</button>
+            <button class="btn btn--sm" onclick="markPreviousPattern()">Use Previous Pattern</button>
+          </div>
+          <div class="students-attendance-list" id="students-attendance-list"></div>
+          <button class="btn btn--primary" onclick="saveAttendance()">Save Attendance</button>
+        </div>
+      </div>
+      <!-- Tracking Methods Section -->
+      <div class="attendance-section" id="methods-section">
+        <div class="methods-content">
+          <h3>Attendance Tracking Methods Comparison</h3>
+          <div class="methods-chart">
+            <img src="https://ppl-ai-code-interpreter-files.s3.amazonaws.com/web/direct-files/04df722c09aed5dae4731d3d79bda432/5d64a5f1-8f10-4741-bd33-58ac2c0a2b78/8e34fe6f.png" alt="Attendance Methods Comparison" class="attendance-methods-chart">
+          </div>
+          <div class="methods-grid">
+            <div class="method-card">
+              <h4>QR Code Scanning</h4>
+              <div class="status status--success">Active</div>
+              <p>Fast and contactless attendance marking</p>
+            </div>
+            <div class="method-card">
+              <h4>Manual Marking</h4>
+              <div class="status status--success">Active</div>
+              <p>Traditional method with teacher control</p>
+            </div>
+            <div class="method-card">
+              <h4>RFID Cards</h4>
+              <div class="status status--warning">Planned</div>
+              <p>Automatic scanning with student ID cards</p>
+            </div>
+            <div class="method-card">
+              <h4>Biometric</h4>
+              <div class="status status--info">Future</div>
+              <p>Fingerprint or facial recognition</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Analytics Section -->
+      <div class="attendance-section" id="analytics-section">
+        <div class="analytics-content">
+          <h3>Attendance Analytics</h3>
+          <div class="analytics-filters">
+            <select class="form-control" id="analytics-period">
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
+              <option value="semester">This Semester</option>
+            </select>
+            <select class="form-control" id="analytics-subject">
+              <option value="">All Subjects</option>
+            </select>
+          </div>
+          <div class="analytics-grid">
+            <div class="analytics-card">
+              <h4>Overall Attendance Rate</h4>
+              <div class="chart-container" style="position: relative; height: 200px;">
+                <canvas id="attendance-rate-chart"></canvas>
+              </div>
+            </div>
+            <div class="analytics-card">
+              <h4>Daily Trends</h4>
+              <div class="chart-container" style="position: relative; height: 200px;">
+                <canvas id="daily-trends-chart"></canvas>
+              </div>
+            </div>
+            <div class="analytics-card">
+              <h4>Subject-wise Attendance</h4>
+              <div class="chart-container" style="position: relative; height: 200px;">
+                <canvas id="subject-attendance-chart"></canvas>
+              </div>
+            </div>
+            <div class="analytics-card">
+              <h4>Low Attendance Alerts</h4>
+              <div class="alerts-list" id="attendance-alerts"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Student Management Section -->
+      <div class="attendance-section" id="students-section">
+        <div class="students-content">
+          <h3>Student Management</h3>
+          <div class="students-controls">
+            <input type="text" class="form-control" id="student-search" placeholder="Search students...">
+            <button class="btn btn--primary" onclick="addNewStudent()">Add Student</button>
+          </div>
+          <div class="students-grid" id="students-grid"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reports Module -->
+  <div class="module" id="reports-module">
+    <div class="container">
+      <div class="module-header">
+        <h1>Reports</h1>
+        <div class="report-date-range">
+          <input type="date" class="form-control" id="report-start-date">
+          <span>to</span>
+          <input type="date" class="form-control" id="report-end-date">
+        </div>
+      </div>
+      <div class="reports-tabs">
+        <button class="reports-tab active" data-section="timetable-reports">Timetable Reports</button>
+        <button class="reports-tab" data-section="attendance-reports">Attendance Reports</button>
+        <button class="reports-tab" data-section="analytics-reports">Analytics</button>
+      </div>
+      <!-- Timetable Reports -->
+      <div class="reports-section active" id="timetable-reports-section">
+        <div class="reports-grid">
+          <div class="report-card">
+            <h3>Teacher Workload Distribution</h3>
+            <div class="chart-container" style="position: relative; height: 250px;">
+              <canvas id="teacher-workload-chart"></canvas>
+            </div>
+          </div>
+          <div class="report-card">
+            <h3>Room Utilization Rates</h3>
+            <div class="chart-container" style="position: relative; height: 250px;">
+              <canvas id="room-utilization-chart"></canvas>
+            </div>
+          </div>
+          <div class="report-card">
+            <h3>Schedule Conflicts</h3>
+            <div class="conflicts-list" id="conflicts-list"></div>
+          </div>
+          <div class="report-card">
+            <h3>Empty Time Slots</h3>
+            <div class="empty-slots-list" id="empty-slots-list"></div>
+          </div>
+        </div>
+      </div>
+      <!-- Attendance Reports -->
+      <div class="reports-section" id="attendance-reports-section">
+        <div class="reports-grid">
+          <div class="report-card">
+            <h3>Student Attendance Summary</h3>
+            <div class="summary-table" id="student-summary-table"></div>
+          </div>
+          <div class="report-card">
+            <h3>Defaulter Lists</h3>
+            <div class="defaulters-list" id="defaulters-list"></div>
+          </div>
+        </div>
+      </div>
+      <!-- Analytics Reports -->
+      <div class="reports-section" id="analytics-reports-section">
+        <div class="analytics-overview">
+          <h3>System Analytics Overview</h3>
+          <div class="overview-stats">
+            <div class="stat-item">
+              <div class="stat-value" id="total-scheduled-hours">0</div>
+              <div class="stat-label">Total Scheduled Hours</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value" id="avg-attendance">0%</div>
+              <div class="stat-label">Average Attendance</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value" id="peak-attendance-day">-</div>
+              <div class="stat-label">Peak Attendance Day</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Module -->
+  <div class="module" id="settings-module">
+    <div class="container">
+      <div class="module-header">
+        <h1>Settings</h1>
+        <button class="btn btn--primary" onclick="saveSettings()">Save Settings</button>
+      </div>
+      <div class="settings-content">
+        <div class="settings-section">
+          <h3>Institution Configuration</h3>
+          <div class="form-group">
+            <label class="form-label">Institution Name</label>
+            <input type="text" class="form-control" id="institution-name" value="HH310 Academic Institute">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Academic Year</label>
+            <select class="form-control" id="academic-year">
+              <option value="2024-25">2024-25</option>
+              <option value="2025-26">2025-26</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Semester</label>
+            <select class="form-control" id="current-semester">
+              <option value="1">Semester 1</option>
+              <option value="2">Semester 2</option>
+              <option value="3">Semester 3</option>
+              <option value="4">Semester 4</option>
+              <option value="5">Semester 5</option>
+              <option value="6">Semester 6</option>
+              <option value="7">Semester 7</option>
+              <option value="8">Semester 8</option>
+            </select>
+          </div>
+        </div>
+        <div class="settings-section">
+          <h3>System Preferences</h3>
+          <div class="form-group">
+            <label class="form-label">Default Timetable Algorithm</label>
+            <select class="form-control" id="default-algorithm">
+              <option value="genetic">Genetic Algorithm</option>
+              <option value="csp">Constraint Satisfaction Problem</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Attendance Threshold (%)</label>
+            <input type="number" class="form-control" id="attendance-threshold" value="75" min="1" max="100">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Auto-save Interval (minutes)</label>
+            <input type="number" class="form-control" id="autosave-interval" value="5" min="1" max="60">
+          </div>
+        </div>
+        <div class="settings-section">
+          <h3>Notification Settings</h3>
+          <div class="checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="email-notifications" checked>
+              Email Notifications
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="attendance-alerts" checked>
+              Low Attendance Alerts
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="schedule-reminders" checked>
+              Schedule Reminders
+            </label>
+          </div>
+        </div>
+        <div class="settings-section">
+          <h3>Data Management</h3>
+          <div class="data-actions">
+            <button class="btn btn--outline" onclick="exportData()">Export Data</button>
+            <button class="btn btn--outline" onclick="importData()">Import Data</button>
+            <button class="btn btn--outline" onclick="backupData()">Backup System</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Login Modal -->
+  <div class="modal hidden" id="login-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Login</h3>
+        <button class="modal-close" onclick="closeModal('login-modal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="login-form">
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" id="login-email" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input type="password" class="form-control" id="login-password" required>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn--secondary" onclick="closeModal('login-modal')">Cancel</button>
+        <button class="btn btn--primary" onclick="loginUser()">Login</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Signup Modal -->
+  <div class="modal hidden" id="signup-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Sign Up</h3>
+        <button class="modal-close" onclick="closeModal('signup-modal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="signup-form">
+          <div class="form-group">
+            <label class="form-label">Name</label>
+            <input type="text" class="form-control" id="signup-name" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" id="signup-email" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input type="password" class="form-control" id="signup-password" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Role</label>
+            <select class="form-control" id="signup-role" required>
+              <option value="">Select Role</option>
+              <option value="student">Student</option>
+              <option value="teacher">Teacher</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn--secondary" onclick="closeModal('signup-modal')">Cancel</button>
+        <button class="btn btn--primary" onclick="signupUser()">Sign Up</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Student Modal (unchanged) -->
+  <div class="modal hidden" id="student-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Add/Edit Student</h3>
+        <button class="modal-close" onclick="closeModal('student-modal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="student-form">
+          <div class="form-group">
+            <label class="form-label">Student Name</label>
+            <input type="text" class="form-control" id="modal-student-name" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Roll Number</label>
+            <input type="text" class="form-control" id="modal-student-roll" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" id="modal-student-email" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Group</label>
+            <select class="form-control" id="modal-student-group" required>
+              <option value="">Select Group</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn--secondary" onclick="closeModal('student-modal')">Cancel</button>
+        <button class="btn btn--primary" onclick="saveStudent()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="supabase-config.js"></script>
+  <script src="app.js"></script>
+  <script>
+    // Tab navigation logic
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+      tab.addEventListener('click', function() {
+        // Deactivate all tabs and modules
+        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.module').forEach(m => m.classList.remove('active'));
+        // Activate clicked tab and corresponding module
+        tab.classList.add('active');
+        let target = tab.getAttribute('data-tab');
+        document.getElementById(target + '-module').classList.add('active');
+      });
+    });
+    // Timetable tabs
+    document.querySelectorAll('.timetable-tab').forEach(tab => {
+      tab.addEventListener('click', function() {
+        document.querySelectorAll('.timetable-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.timetable-section').forEach(s => s.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.getAttribute('data-section') + '-section').classList.add('active');
+      });
+    });
+    // Attendance tabs
+    document.querySelectorAll('.attendance-tab').forEach(tab => {
+      tab.addEventListener('click', function() {
+        document.querySelectorAll('.attendance-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.attendance-section').forEach(s => s.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.getAttribute('data-section') + '-section').classList.add('active');
+      });
+    });
+    // Reports tabs
+    document.querySelectorAll('.reports-tab').forEach(tab => {
+      tab.addEventListener('click', function() {
+        document.querySelectorAll('.reports-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.reports-section').forEach(s => s.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.getAttribute('data-section') + '-section').classList.add('active');
+      });
+    });
+    // Modal handling
+    document.getElementById('login-btn').onclick = () => {
+      document.getElementById('login-modal').classList.remove('hidden');
+    };
+    document.getElementById('signup-btn').onclick = () => {
+      document.getElementById('signup-modal').classList.remove('hidden');
+    };
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+    
+    // Authentication functions
+    function redirectToLogin(mode = 'login') {
+      window.location.href = `login.html?form=${mode}`;
+    }
+    
+    async function checkAuthentication() {
+      const supabase = window.supabaseClient;
+      if (!supabase) {
+        console.warn('Supabase client not available');
+        showAuthButtons();
+        return false;
+      }
+
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting session:', error);
+          showAuthButtons();
+          return false;
+        }
+        
+        if (session && session.user) {
+          // Get user profile
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (!profileError && profile) {
+            showUserMenu();
+            loadUserProfile(profile);
+            return true;
+          }
+        }
+      } catch (error) {
+        console.error('Session check error:', error);
+      }
+      
+      showAuthButtons();
+      return false;
+    }
+    
+    function showUserMenu() {
+      document.getElementById('login-btn').classList.add('hidden');
+      document.getElementById('signup-btn').classList.add('hidden');
+      document.getElementById('user-menu').classList.remove('hidden');
+    }
+    
+    function showAuthButtons() {
+      document.getElementById('login-btn').classList.remove('hidden');
+      document.getElementById('signup-btn').classList.remove('hidden');
+      document.getElementById('user-menu').classList.add('hidden');
+    }
+    
+    function loadUserProfile(profile) {
+      // Load user profile data
+      const userName = profile.full_name || profile.first_name || profile.email;
+      const avatarUrl = profile.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=667eea&color=fff`;
+      
+      document.getElementById('user-name').textContent = userName;
+      document.getElementById('user-avatar').src = avatarUrl;
+      
+      // Store user data for use in dashboard
+      window.currentUser = {
+        ...profile,
+        id: profile.id,
+        email: profile.email,
+        role: profile.role
+      };
+      
+      console.log('User profile loaded:', window.currentUser);
+    }
+    
+    async function logout() {
+      const supabase = window.supabaseClient;
+      if (supabase) {
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          console.error('Logout error:', error);
+        }
+      }
+      
+      // Clear user data
+      window.currentUser = null;
+      
+      // Redirect to login
+      window.location.href = 'login.html';
+    }
+    
+    function showProfile() {
+      alert('Profile functionality coming soon!');
+    }
+    
+    function showSettings() {
+      // Switch to settings tab
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.module').forEach(m => m.classList.remove('active'));
+      document.querySelector('[data-tab="settings"]').classList.add('active');
+      document.getElementById('settings-module').classList.add('active');
+      closeDropdown();
+    }
+    
+    // Dropdown menu functionality
+    function toggleDropdown() {
+      const dropdown = document.getElementById('dropdown-menu');
+      const userInfo = document.querySelector('.user-info');
+      
+      dropdown.classList.toggle('show');
+      userInfo.classList.toggle('active');
+    }
+    
+    function closeDropdown() {
+      const dropdown = document.getElementById('dropdown-menu');
+      const userInfo = document.querySelector('.user-info');
+      
+      dropdown.classList.remove('show');
+      userInfo.classList.remove('active');
+    }
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+      const userMenu = document.getElementById('user-menu');
+      if (userMenu && !userMenu.contains(e.target)) {
+        closeDropdown();
+      }
+    });
+    
+    // Add click handler for user info
+    document.addEventListener('DOMContentLoaded', function() {
+      const userInfo = document.querySelector('.user-info');
+      if (userInfo) {
+        userInfo.addEventListener('click', toggleDropdown);
+      }
+    });
+    
+    // Add loginUser(), signupUser(), saveStudent() in app.js for backend logic
+
+    // Example: Show today's date/time
+    function updateTime() {
+      const now = new Date();
+      document.getElementById('current-date').textContent = now.toLocaleDateString();
+      document.getElementById('current-time').textContent = now.toLocaleTimeString();
+    }
+    setInterval(updateTime, 1000);
+    updateTime();
+    
+    // Initialize authentication check
+    document.addEventListener('DOMContentLoaded', function() {
+      checkAuthentication();
+      
+      // Check for role parameter from login redirect
+      const urlParams = new URLSearchParams(window.location.search);
+      const role = urlParams.get('role');
+      const tab = urlParams.get('tab');
+      
+      if (role) {
+        console.log(`User logged in with role: ${role}`);
+        // You can customize the dashboard based on role here
+      }
+      
+      if (tab) {
+        // Switch to specified tab
+        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.module').forEach(m => m.classList.remove('active'));
+        
+        const targetTab = document.querySelector(`[data-tab="${tab}"]`);
+        const targetModule = document.getElementById(`${tab}-module`);
+        
+        if (targetTab && targetModule) {
+          targetTab.classList.add('active');
+          targetModule.classList.add('active');
+        }
+      }
+    });
+  </script>
+</body>
+</html>
