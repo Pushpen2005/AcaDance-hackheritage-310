@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Attendance System - Complete Setup & Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+        }
+
+        .setup-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            background: #f9f9f9;
+        }
+
+        .setup-section h2 {
+            color: #4a5568;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+            min-width: 150px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .log {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 15px 0;
+            white-space: pre-wrap;
+        }
+
+        .progress {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+        }
+
+        .progress-step {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            margin: 0 5px;
+            border-radius: 8px;
+            background: #f0f0f0;
+            color: #666;
+            position: relative;
+        }
+
+        .progress-step.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .progress-step.complete {
+            background: #28a745;
+            color: white;
+        }
+
+        .test-credentials {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .credential-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .credential-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .credential-field {
+            margin: 10px 0;
+        }
+
+        .credential-field label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 5px;
+            color: #555;
+        }
+
+        .credential-field input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .qr-display {
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .qr-code {
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            display: inline-block;
+        }
+
+        @media (max-width: 768px) {
+            .test-credentials {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 QR Attendance System - Complete Setup & Test</h1>
+        
+        <div class="progress">
+            <div class="progress-step" id="step1">1. Database Setup</div>
+            <div class="progress-step" id="step2">2. Create Accounts</div>
+            <div class="progress-step" id="step3">3. Generate QR</div>
+            <div class="progress-step" id="step4">4. Test Scanning</div>
+            <div class="progress-step" id="step5">5. Verify Data</div>
+        </div>
+
+        <!-- Step 1: Database Setup -->
+        <div class="setup-section">
+            <h2>📊 Step 1: Database Setup</h2>
+            <p>First, let's verify and set up your Supabase database with all required tables and functions.</p>
+            <div id="dbStatus" class="status info">Click "Setup Database" to begin...</div>
+            <button class="btn" onclick="setupDatabase()">Setup Database</button>
+            <button class="btn" onclick="verifyDatabase()">Verify Database</button>
+        </div>
+
+        <!-- Step 2: Create Test Accounts -->
+        <div class="setup-section">
+            <h2>👥 Step 2: Create Test Accounts</h2>
+            <p>Create teacher and student test accounts for demonstration.</p>
+            
+            <div class="test-credentials">
+                <div class="credential-card">
+                    <h3>🎓 Teacher Account</h3>
+                    <div class="credential-field">
+                        <label>Email:</label>
+                        <input type="email" id="teacherEmail" value="teacher@acadance.edu">
+                    </div>
+                    <div class="credential-field">
+                        <label>Password:</label>
+                        <input type="password" id="teacherPassword" value="Teacher123!">
+                    </div>
+                    <div class="credential-field">
+                        <label>Full Name:</label>
+                        <input type="text" id="teacherName" value="Dr. Sarah Johnson">
+                    </div>
+                    <button class="btn" onclick="createTeacherAccount()">Create Teacher</button>
+                </div>
+                
+                <div class="credential-card">
+                    <h3>🎒 Student Account</h3>
+                    <div class="credential-field">
+                        <label>Email:</label>
+                        <input type="email" id="studentEmail" value="student@acadance.edu">
+                    </div>
+                    <div class="credential-field">
+                        <label>Password:</label>
+                        <input type="password" id="studentPassword" value="Student123!">
+                    </div>
+                    <div class="credential-field">
+                        <label>Full Name:</label>
+                        <input type="text" id="studentName" value="Alex Smith">
+                    </div>
+                    <button class="btn" onclick="createStudentAccount()">Create Student</button>
+                </div>
+            </div>
+            
+            <div id="accountStatus" class="status info">Ready to create test accounts...</div>
+        </div>
+
+        <!-- Step 3: Generate QR Code -->
+        <div class="setup-section">
+            <h2>📱 Step 3: Generate QR Code (Teacher)</h2>
+            <p>Login as teacher and generate a QR code for attendance.</p>
+            <button class="btn" onclick="loginAsTeacher()" id="teacherLoginBtn">Login as Teacher</button>
+            <button class="btn" onclick="generateQRCode()" id="generateQRBtn" disabled>Generate QR Code</button>
+            
+            <div id="qrStatus" class="status info">Login as teacher first...</div>
+            <div id="qrDisplay" class="qr-display" style="display: none;">
+                <h3>📋 Attendance QR Code</h3>
+                <div id="qrCodeContainer" class="qr-code"></div>
+                <p><strong>Session:</strong> <span id="sessionName"></span></p>
+                <p><strong>Class:</strong> <span id="className"></span></p>
+                <p><strong>Expires:</strong> <span id="expiresAt"></span></p>
+            </div>
+        </div>
+
+        <!-- Step 4: Test QR Scanning -->
+        <div class="setup-section">
+            <h2>📸 Step 4: Test QR Scanning (Student)</h2>
+            <p>Login as student and scan the QR code to mark attendance.</p>
+            <button class="btn" onclick="loginAsStudent()" id="studentLoginBtn">Login as Student</button>
+            <button class="btn" onclick="simulateQRScan()" id="scanQRBtn" disabled>Simulate QR Scan</button>
+            
+            <div id="scanStatus" class="status info">Login as student first...</div>
+        </div>
+
+        <!-- Step 5: Verify Results -->
+        <div class="setup-section">
+            <h2>✅ Step 5: Verify Attendance Data</h2>
+            <p>Check that attendance was properly recorded in the database.</p>
+            <button class="btn" onclick="verifyAttendance()">Verify Attendance</button>
+            
+            <div id="verifyStatus" class="status info">Click "Verify Attendance" to check results...</div>
+        </div>
+
+        <!-- Activity Log -->
+        <div class="setup-section">
+            <h2>📝 Activity Log</h2>
+            <div id="log" class="log">System ready - click any button to begin testing...\n</div>
+        </div>
+    </div>
+
+    <!-- Include Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    
+    <!-- Include QR Code Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
+    <script>
+        let currentTeacherSession = null;
+        let currentQRData = null;
+        let currentUser = null;
+
+        // Logging function
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${type.toUpperCase()}: ${message}\n`;
+            logDiv.textContent += logEntry;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            
+            console.log(logEntry);
+        }
+
+        // Update progress step
+        function updateProgress(step) {
+            for (let i = 1; i <= 5; i++) {
+                const stepEl = document.getElementById(`step${i}`);
+                if (i < step) {
+                    stepEl.className = 'progress-step complete';
+                } else if (i === step) {
+                    stepEl.className = 'progress-step active';
+                } else {
+                    stepEl.className = 'progress-step';
+                }
+            }
+        }
+
+        // Update status displays
+        function updateStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `status ${type}`;
+        }
+
+        // Setup Database
+        async function setupDatabase() {
+            log('Starting database setup...');
+            updateProgress(1);
+            updateStatus('dbStatus', 'Setting up database tables and functions...', 'info');
+
+            try {
+                // First verify connection
+                const { data: testData, error: testError } = await supabaseClient
+                    .from('profiles')
+                    .select('count')
+                    .limit(1);
+
+                if (testError && testError.message.includes('relation "profiles" does not exist')) {
+                    log('Database tables not found - this is expected for first setup');
+                    updateStatus('dbStatus', 'Database tables need to be created. Please run the SQL setup in Supabase dashboard.', 'error');
+                    
+                    // Show instructions
+                    const instructions = `
+To complete database setup:
+
+1. Go to your Supabase Dashboard
+2. Navigate to SQL Editor
+3. Copy the contents of 'simplified-db-setup.sql'
+4. Paste and execute in SQL Editor
+5. Come back here and click "Verify Database"
+
+The setup file contains all tables, policies, and functions needed.
+                    `;
+                    log(instructions);
+                    return;
+                }
+
+                if (testError) {
+                    throw testError;
+                }
+
+                log('Database connection successful!');
+                updateStatus('dbStatus', 'Database setup completed successfully!', 'success');
+                
+            } catch (error) {
+                log(`Database setup error: ${error.message}`, 'error');
+                updateStatus('dbStatus', `Setup failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Verify Database
+        async function verifyDatabase() {
+            log('Verifying database setup...');
+            
+            try {
+                // Check all required tables
+                const tables = ['profiles', 'classes', 'qr_attendance_sessions', 'qr_attendance_records', 'class_enrollments'];
+                const results = {};
+                
+                for (const table of tables) {
+                    try {
+                        const { data, error } = await supabaseClient
+                            .from(table)
+                            .select('*')
+                            .limit(1);
+                        
+                        if (error) {
+                            results[table] = false;
+                            log(`❌ Table '${table}' check failed: ${error.message}`);
+                        } else {
+                            results[table] = true;
+                            log(`✅ Table '${table}' verified`);
+                        }
+                    } catch (e) {
+                        results[table] = false;
+                        log(`❌ Table '${table}' not accessible`);
+                    }
+                }
+
+                const allTablesExist = Object.values(results).every(exists => exists);
+                
+                if (allTablesExist) {
+                    updateStatus('dbStatus', 'All database tables verified successfully!', 'success');
+                    log('Database verification completed - all tables found!');
+                    updateProgress(2);
+                } else {
+                    updateStatus('dbStatus', 'Some database tables are missing. Please run the SQL setup first.', 'error');
+                    log('Database verification failed - some tables missing');
+                }
+                
+            } catch (error) {
+                log(`Database verification error: ${error.message}`, 'error');
+                updateStatus('dbStatus', `Verification failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Create Teacher Account
+        async function createTeacherAccount() {
+            const email = document.getElementById('teacherEmail').value;
+            const password = document.getElementById('teacherPassword').value;
+            const fullName = document.getElementById('teacherName').value;
+
+            log(`Creating teacher account for ${email}...`);
+            updateStatus('accountStatus', 'Creating teacher account...', 'info');
+
+            try {
+                // Sign up the user
+                const { data: authData, error: authError } = await supabaseClient.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: {
+                        data: {
+                            full_name: fullName,
+                            role: 'teacher'
+                        }
+                    }
+                });
+
+                if (authError) {
+                    throw authError;
+                }
+
+                log(`Teacher account created successfully! User ID: ${authData.user?.id}`);
+                
+                // Update profile with role
+                if (authData.user) {
+                    const { error: profileError } = await supabaseClient
+                        .from('profiles')
+                        .update({ 
+                            role: 'teacher',
+                            full_name: fullName,
+                            first_name: fullName.split(' ')[0],
+                            last_name: fullName.split(' ').slice(1).join(' ')
+                        })
+                        .eq('id', authData.user.id);
+
+                    if (profileError) {
+                        log(`Profile update warning: ${profileError.message}`);
+                    }
+                }
+
+                updateStatus('accountStatus', 'Teacher account created successfully!', 'success');
+                log('Teacher account setup completed');
+
+            } catch (error) {
+                log(`Teacher account creation failed: ${error.message}`, 'error');
+                updateStatus('accountStatus', `Teacher creation failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Create Student Account
+        async function createStudentAccount() {
+            const email = document.getElementById('studentEmail').value;
+            const password = document.getElementById('studentPassword').value;
+            const fullName = document.getElementById('studentName').value;
+
+            log(`Creating student account for ${email}...`);
+            updateStatus('accountStatus', 'Creating student account...', 'info');
+
+            try {
+                // Sign up the user
+                const { data: authData, error: authError } = await supabaseClient.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: {
+                        data: {
+                            full_name: fullName,
+                            role: 'student'
+                        }
+                    }
+                });
+
+                if (authError) {
+                    throw authError;
+                }
+
+                log(`Student account created successfully! User ID: ${authData.user?.id}`);
+                
+                // Update profile with role
+                if (authData.user) {
+                    const { error: profileError } = await supabaseClient
+                        .from('profiles')
+                        .update({ 
+                            role: 'student',
+                            full_name: fullName,
+                            first_name: fullName.split(' ')[0],
+                            last_name: fullName.split(' ').slice(1).join(' ')
+                        })
+                        .eq('id', authData.user.id);
+
+                    if (profileError) {
+                        log(`Profile update warning: ${profileError.message}`);
+                    }
+                }
+
+                updateStatus('accountStatus', 'Both accounts created successfully!', 'success');
+                log('Student account setup completed');
+                updateProgress(3);
+
+            } catch (error) {
+                log(`Student account creation failed: ${error.message}`, 'error');
+                updateStatus('accountStatus', `Student creation failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Login as Teacher
+        async function loginAsTeacher() {
+            const email = document.getElementById('teacherEmail').value;
+            const password = document.getElementById('teacherPassword').value;
+
+            log(`Logging in as teacher: ${email}...`);
+            updateStatus('qrStatus', 'Logging in as teacher...', 'info');
+
+            try {
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+                if (error) {
+                    throw error;
+                }
+
+                currentUser = data.user;
+                log(`Teacher login successful! User: ${currentUser.email}`);
+                updateStatus('qrStatus', 'Teacher logged in successfully! Ready to generate QR code.', 'success');
+                
+                document.getElementById('generateQRBtn').disabled = false;
+                document.getElementById('teacherLoginBtn').textContent = '✅ Logged In';
+                document.getElementById('teacherLoginBtn').disabled = true;
+
+            } catch (error) {
+                log(`Teacher login failed: ${error.message}`, 'error');
+                updateStatus('qrStatus', `Login failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Generate QR Code
+        async function generateQRCode() {
+            log('Generating QR code for attendance...');
+            updateStatus('qrStatus', 'Generating QR code...', 'info');
+
+            try {
+                // Use first available class for demo
+                const classId = '550e8400-e29b-41d4-a716-446655440001'; // CS101 from setup
+                
+                // Call the create_qr_session function
+                const { data: sessionData, error: sessionError } = await supabaseClient
+                    .rpc('create_qr_session', {
+                        p_class_id: classId,
+                        p_session_name: 'Demo Attendance Session',
+                        p_duration_minutes: 30
+                    });
+
+                if (sessionError) {
+                    throw sessionError;
+                }
+
+                if (!sessionData.success) {
+                    throw new Error('Failed to create QR session');
+                }
+
+                currentTeacherSession = sessionData;
+                currentQRData = sessionData.qrData;
+
+                log(`QR session created: ${sessionData.sessionId}`);
+                log(`QR token: ${sessionData.qrToken}`);
+
+                // Generate QR code image
+                const qrString = JSON.stringify(currentQRData);
+                const qrContainer = document.getElementById('qrCodeContainer');
+                
+                // Clear previous QR code
+                qrContainer.innerHTML = '';
+                
+                // Generate new QR code
+                QRCode.toCanvas(qrString, { width: 300, margin: 2 }, (error, canvas) => {
+                    if (error) {
+                        log(`QR generation error: ${error}`, 'error');
+                        return;
+                    }
+                    
+                    qrContainer.appendChild(canvas);
+                });
+
+                // Update display
+                document.getElementById('sessionName').textContent = 'Demo Attendance Session';
+                document.getElementById('className').textContent = 'Computer Science 101';
+                document.getElementById('expiresAt').textContent = new Date(sessionData.expiresAt).toLocaleString();
+                
+                document.getElementById('qrDisplay').style.display = 'block';
+                updateStatus('qrStatus', 'QR code generated successfully!', 'success');
+                log('QR code generated and displayed');
+                updateProgress(4);
+
+            } catch (error) {
+                log(`QR generation failed: ${error.message}`, 'error');
+                updateStatus('qrStatus', `QR generation failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Login as Student
+        async function loginAsStudent() {
+            const email = document.getElementById('studentEmail').value;
+            const password = document.getElementById('studentPassword').value;
+
+            log(`Logging in as student: ${email}...`);
+            updateStatus('scanStatus', 'Logging in as student...', 'info');
+
+            try {
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+                if (error) {
+                    throw error;
+                }
+
+                currentUser = data.user;
+                log(`Student login successful! User: ${currentUser.email}`);
+                updateStatus('scanStatus', 'Student logged in successfully! Ready to scan QR code.', 'success');
+                
+                document.getElementById('scanQRBtn').disabled = false;
+                document.getElementById('studentLoginBtn').textContent = '✅ Logged In';
+                document.getElementById('studentLoginBtn').disabled = true;
+
+            } catch (error) {
+                log(`Student login failed: ${error.message}`, 'error');
+                updateStatus('scanStatus', `Login failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Simulate QR Scan
+        async function simulateQRScan() {
+            if (!currentQRData) {
+                updateStatus('scanStatus', 'No QR code available to scan. Generate one first.', 'error');
+                return;
+            }
+
+            log('Simulating QR code scan...');
+            updateStatus('scanStatus', 'Scanning QR code and marking attendance...', 'info');
+
+            try {
+                // Call the mark_attendance_qr function
+                const { data: attendanceData, error: attendanceError } = await supabaseClient
+                    .rpc('mark_attendance_qr', {
+                        qr_data: JSON.stringify(currentQRData),
+                        student_user_id: currentUser.id
+                    });
+
+                if (attendanceError) {
+                    throw attendanceError;
+                }
+
+                if (!attendanceData.success) {
+                    throw new Error(attendanceData.error || 'Failed to mark attendance');
+                }
+
+                log(`Attendance marked successfully! Status: ${attendanceData.status}`);
+                log(`Timestamp: ${attendanceData.timestamp}`);
+                updateStatus('scanStatus', `Attendance marked successfully! Status: ${attendanceData.status}`, 'success');
+                updateProgress(5);
+
+            } catch (error) {
+                log(`Attendance marking failed: ${error.message}`, 'error');
+                updateStatus('scanStatus', `Scan failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Verify Attendance
+        async function verifyAttendance() {
+            log('Verifying attendance records...');
+            updateStatus('verifyStatus', 'Checking attendance records...', 'info');
+
+            try {
+                // Get recent attendance records
+                const { data: records, error } = await supabaseClient
+                    .from('qr_attendance_records')
+                    .select(`
+                        *,
+                        qr_attendance_sessions (
+                            session_name,
+                            classes (name)
+                        )
+                    `)
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+
+                if (error) {
+                    throw error;
+                }
+
+                log(`Found ${records.length} attendance records`);
+                
+                if (records.length === 0) {
+                    updateStatus('verifyStatus', 'No attendance records found. Try scanning the QR code first.', 'info');
+                    return;
+                }
+
+                // Display latest records
+                let verificationMessage = `Found ${records.length} attendance records:\n\n`;
+                
+                records.forEach((record, index) => {
+                    const sessionName = record.qr_attendance_sessions?.session_name || 'Unknown Session';
+                    const className = record.qr_attendance_sessions?.classes?.name || 'Unknown Class';
+                    const scanTime = new Date(record.scanned_at).toLocaleString();
+                    
+                    verificationMessage += `${index + 1}. ${record.student_name} (${record.student_email})\n`;
+                    verificationMessage += `   Session: ${sessionName} | Class: ${className}\n`;
+                    verificationMessage += `   Status: ${record.status} | Time: ${scanTime}\n\n`;
+                });
+
+                log(verificationMessage);
+                updateStatus('verifyStatus', `Verification completed! Found ${records.length} attendance records.`, 'success');
+
+                // Check if our test record is there
+                const testRecord = records.find(r => r.student_email === document.getElementById('studentEmail').value);
+                if (testRecord) {
+                    log('✅ Test attendance record found - system working correctly!');
+                    updateStatus('verifyStatus', '✅ Test completed successfully! QR attendance system is working.', 'success');
+                }
+
+            } catch (error) {
+                log(`Verification failed: ${error.message}`, 'error');
+                updateStatus('verifyStatus', `Verification failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            log('QR Attendance System Setup & Test Tool loaded');
+            log('Follow the steps in order to test the complete system');
+            updateProgress(1);
+        });
+    </script>
+</body>
+</html>

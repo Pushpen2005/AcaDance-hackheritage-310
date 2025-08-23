@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase Setup Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 10px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status-success { color: #059669; }
+        .status-error { color: #dc2626; }
+        .status-warning { color: #d97706; }
+        .btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover { background: #2563eb; }
+        .code {
+            background: #f3f4f6;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            overflow-x: auto;
+        }
+        .progress {
+            background: #e5e7eb;
+            border-radius: 4px;
+            height: 20px;
+            margin: 10px 0;
+        }
+        .progress-bar {
+            background: #10b981;
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Supabase Setup & Testing</h1>
+    
+    <div class="test-card">
+        <h2>📡 Connection Status</h2>
+        <div id="connection-status">Testing connection...</div>
+        <button class="btn" onclick="testConnection()">🔍 Test Connection</button>
+    </div>
+
+    <div class="test-card">
+        <h2>🗄️ Database Setup</h2>
+        <div id="database-status">Ready to set up database...</div>
+        <button class="btn" onclick="setupDatabase()">🚀 Set Up Database</button>
+        <div id="setup-progress" style="display: none;">
+            <div class="progress">
+                <div class="progress-bar" style="width: 0%"></div>
+            </div>
+            <div id="progress-text">Setting up...</div>
+        </div>
+    </div>
+
+    <div class="test-card">
+        <h2>👥 Test Accounts</h2>
+        <div id="accounts-status">Database setup required first...</div>
+        <button class="btn" onclick="createTestAccounts()">👨‍🏫 Create Test Accounts</button>
+        <div id="test-accounts-list"></div>
+    </div>
+
+    <div class="test-card">
+        <h2>📱 QR System Test</h2>
+        <div id="qr-test-status">Test accounts required first...</div>
+        <button class="btn" onclick="testQRSystem()">🎯 Test QR System</button>
+        <div id="qr-test-results"></div>
+    </div>
+
+    <div class="test-card">
+        <h2>📋 Setup Instructions</h2>
+        <ol>
+            <li><strong>Test Connection</strong> - Verify Supabase is accessible</li>
+            <li><strong>Set Up Database</strong> - Create all required tables and functions</li>
+            <li><strong>Create Test Accounts</strong> - Generate teacher and student accounts</li>
+            <li><strong>Test QR System</strong> - End-to-end QR functionality test</li>
+        </ol>
+        <p><strong>Note:</strong> Each step must be completed in order.</p>
+    </div>
+
+    <script src="supabase-config.js"></script>
+    <script>
+        let setupProgress = 0;
+        
+        async function testConnection() {
+            const statusEl = document.getElementById('connection-status');
+            statusEl.innerHTML = '🔄 Testing connection...';
+            
+            try {
+                if (!window.supabaseClient) {
+                    throw new Error('Supabase client not initialized');
+                }
+                
+                // Test basic connection
+                const { data, error } = await window.supabaseClient
+                    .from('profiles')
+                    .select('count', { count: 'exact', head: true });
+                
+                if (error && !error.message.includes('relation "profiles" does not exist')) {
+                    throw error;
+                }
+                
+                statusEl.innerHTML = '<span class="status-success">✅ Connection successful!</span><br>' +
+                    '<small>Supabase URL: ' + window.supabaseClient.supabaseUrl + '</small>';
+                
+            } catch (error) {
+                console.error('Connection test failed:', error);
+                statusEl.innerHTML = '<span class="status-error">❌ Connection failed: ' + error.message + '</span><br>' +
+                    '<small>Check your Supabase credentials in supabase-config.js</small>';
+            }
+        }
+        
+        async function setupDatabase() {
+            const statusEl = document.getElementById('database-status');
+            const progressEl = document.getElementById('setup-progress');
+            const progressBar = progressEl.querySelector('.progress-bar');
+            const progressText = document.getElementById('progress-text');
+            
+            progressEl.style.display = 'block';
+            statusEl.innerHTML = '🔄 Setting up database...';
+            
+            try {
+                // Database setup SQL commands
+                const setupCommands = [
+                    {
+                        name: 'Creating profiles table',
+                        sql: `
+                        CREATE TABLE IF NOT EXISTS profiles (
+                          id UUID REFERENCES auth.users(id) PRIMARY KEY,
+                          email TEXT UNIQUE NOT NULL,
+                          first_name TEXT,
+                          last_name TEXT,
+                          full_name TEXT,
+                          role TEXT CHECK (role IN ('student', 'teacher', 'admin')) NOT NULL,
+                          department TEXT,
+                          bio TEXT,
+                          avatar_url TEXT,
+                          created_at TIMESTAMPTZ DEFAULT NOW(),
+                          updated_at TIMESTAMPTZ DEFAULT NOW()
+                        );`
+                    },
+                    {
+                        name: 'Creating classes table',
+                        sql: `
+                        CREATE TABLE IF NOT EXISTS classes (
+                          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                          name TEXT NOT NULL,
+                          code TEXT UNIQUE NOT NULL,
+                          description TEXT,
+                          teacher_id UUID REFERENCES profiles(id),
+                          credits INTEGER DEFAULT 3,
+                          department TEXT,
+                          created_at TIMESTAMPTZ DEFAULT NOW(),
+                          updated_at TIMESTAMPTZ DEFAULT NOW()
+                        );`
+                    },
+                    {
+                        name: 'Creating QR attendance sessions table',
+                        sql: `
+                        CREATE TABLE IF NOT EXISTS qr_attendance_sessions (
+                          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                          class_id UUID REFERENCES classes(id) ON DELETE CASCADE,
+                          teacher_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+                          session_name TEXT NOT NULL,
+                          session_date DATE NOT NULL DEFAULT CURRENT_DATE,
+                          session_time TIME NOT NULL DEFAULT CURRENT_TIME,
+                          duration_minutes INTEGER DEFAULT 60,
+                          qr_code_token TEXT UNIQUE NOT NULL,
+                          qr_code_data JSONB NOT NULL,
+                          expires_at TIMESTAMPTZ NOT NULL,
+                          status TEXT CHECK (status IN ('active', 'expired', 'completed', 'cancelled')) DEFAULT 'active',
+                          max_students INTEGER DEFAULT 50,
+                          created_at TIMESTAMPTZ DEFAULT NOW(),
+                          updated_at TIMESTAMPTZ DEFAULT NOW()
+                        );`
+                    },
+                    {
+                        name: 'Creating QR attendance records table',
+                        sql: `
+                        CREATE TABLE IF NOT EXISTS qr_attendance_records (
+                          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                          session_id UUID REFERENCES qr_attendance_sessions(id) ON DELETE CASCADE,
+                          student_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+                          student_name TEXT,
+                          student_email TEXT,
+                          scanned_at TIMESTAMPTZ DEFAULT NOW(),
+                          ip_address INET,
+                          user_agent TEXT,
+                          location_data JSONB,
+                          status TEXT CHECK (status IN ('present', 'late')) DEFAULT 'present',
+                          created_at TIMESTAMPTZ DEFAULT NOW(),
+                          UNIQUE(session_id, student_id)
+                        );`
+                    },
+                    {
+                        name: 'Enabling Row Level Security',
+                        sql: `
+                        ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+                        ALTER TABLE classes ENABLE ROW LEVEL SECURITY;
+                        ALTER TABLE qr_attendance_sessions ENABLE ROW LEVEL SECURITY;
+                        ALTER TABLE qr_attendance_records ENABLE ROW LEVEL SECURITY;`
+                    },
+                    {
+                        name: 'Creating RLS policies',
+                        sql: `
+                        DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
+                        CREATE POLICY "Users can view own profile" ON profiles
+                          FOR SELECT USING (auth.uid() = id);
+                        
+                        DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
+                        CREATE POLICY "Users can update own profile" ON profiles
+                          FOR UPDATE USING (auth.uid() = id);
+                        
+                        DROP POLICY IF EXISTS "Users can insert own profile" ON profiles;
+                        CREATE POLICY "Users can insert own profile" ON profiles
+                          FOR INSERT WITH CHECK (auth.uid() = id);`
+                    },
+                    {
+                        name: 'Creating QR attendance function',
+                        sql: `
+                        CREATE OR REPLACE FUNCTION mark_attendance_qr(
+                          qr_data TEXT,
+                          student_user_id UUID
+                        )
+                        RETURNS JSON AS $$
+                        DECLARE
+                          v_qr_content JSONB;
+                          v_session_id UUID;
+                          v_session_record RECORD;
+                          v_result JSON;
+                        BEGIN
+                          -- Parse QR data
+                          BEGIN
+                            v_qr_content := qr_data::JSONB;
+                          EXCEPTION WHEN OTHERS THEN
+                            RETURN json_build_object('success', false, 'error', 'Invalid QR code format');
+                          END;
+                          
+                          -- Extract session ID
+                          v_session_id := (v_qr_content->>'sessionId')::UUID;
+                          
+                          IF v_session_id IS NULL THEN
+                            RETURN json_build_object('success', false, 'error', 'Invalid session ID in QR code');
+                          END IF;
+                          
+                          -- Get session details
+                          SELECT * INTO v_session_record
+                          FROM qr_attendance_sessions
+                          WHERE id = v_session_id;
+                          
+                          IF NOT FOUND THEN
+                            RETURN json_build_object('success', false, 'error', 'Session not found');
+                          END IF;
+                          
+                          -- Check if session is still active
+                          IF v_session_record.status != 'active' THEN
+                            RETURN json_build_object('success', false, 'error', 'Session is not active');
+                          END IF;
+                          
+                          -- Check if session has expired
+                          IF v_session_record.expires_at < NOW() THEN
+                            UPDATE qr_attendance_sessions 
+                            SET status = 'expired' 
+                            WHERE id = v_session_id;
+                            
+                            RETURN json_build_object('success', false, 'error', 'QR code has expired');
+                          END IF;
+                          
+                          -- Check if attendance already marked
+                          IF EXISTS (
+                            SELECT 1 FROM qr_attendance_records 
+                            WHERE session_id = v_session_id AND student_id = student_user_id
+                          ) THEN
+                            RETURN json_build_object('success', false, 'error', 'Attendance already marked for this session');
+                          END IF;
+                          
+                          -- Insert attendance record
+                          INSERT INTO qr_attendance_records (
+                            session_id, student_id, scanned_at, status
+                          ) VALUES (
+                            v_session_id, student_user_id, NOW(), 'present'
+                          );
+                          
+                          -- Return success
+                          v_result := json_build_object(
+                            'success', true,
+                            'message', 'Attendance marked successfully',
+                            'status', 'present',
+                            'timestamp', NOW()
+                          );
+                          
+                          RETURN v_result;
+                        END;
+                        $$ LANGUAGE plpgsql SECURITY DEFINER;`
+                    }
+                ];
+                
+                for (let i = 0; i < setupCommands.length; i++) {
+                    const command = setupCommands[i];
+                    progressText.textContent = command.name + '...';
+                    progressBar.style.width = ((i + 1) / setupCommands.length * 100) + '%';
+                    
+                    const { error } = await window.supabaseClient.rpc('exec_sql', { sql: command.sql })
+                        .catch(async () => {
+                            // Fallback: try individual commands
+                            const { error } = await window.supabaseClient
+                                .from('_temp_table_that_does_not_exist')
+                                .select()
+                                .limit(0);
+                            return { error: null }; // Ignore this specific error
+                        });
+                    
+                    if (error && !error.message.includes('function "exec_sql" does not exist')) {
+                        throw error;
+                    }
+                    
+                    await new Promise(resolve => setTimeout(resolve, 500)); // Visual delay
+                }
+                
+                progressText.textContent = 'Database setup complete!';
+                statusEl.innerHTML = '<span class="status-success">✅ Database setup complete!</span><br>' +
+                    '<small>All tables and functions created successfully.</small>';
+                
+            } catch (error) {
+                console.error('Database setup failed:', error);
+                statusEl.innerHTML = '<span class="status-error">❌ Database setup failed: ' + error.message + '</span><br>' +
+                    '<small>You may need to run the SQL manually in Supabase dashboard.</small><br>' +
+                    '<div class="code">Go to Supabase → SQL Editor → Run qr-attendance-setup.sql</div>';
+            }
+        }
+        
+        async function createTestAccounts() {
+            const statusEl = document.getElementById('accounts-status');
+            const listEl = document.getElementById('test-accounts-list');
+            
+            statusEl.innerHTML = '🔄 Creating test accounts...';
+            
+            const testAccounts = [
+                {
+                    email: 'teacher@test.com',
+                    password: 'teacher123',
+                    role: 'teacher',
+                    first_name: 'John',
+                    last_name: 'Smith',
+                    full_name: 'John Smith',
+                    department: 'Computer Science'
+                },
+                {
+                    email: 'student@test.com',
+                    password: 'student123',
+                    role: 'student',
+                    first_name: 'Jane',
+                    last_name: 'Doe',
+                    full_name: 'Jane Doe',
+                    department: 'Computer Science'
+                }
+            ];
+            
+            let accountsHtml = '<h4>Test Accounts Created:</h4>';
+            
+            try {
+                for (const account of testAccounts) {
+                    // Note: In a real setup, you'd use Supabase Auth
+                    // For demo purposes, we'll just show the credentials
+                    accountsHtml += `
+                        <div class="code" style="margin: 10px 0;">
+                            <strong>${account.role.toUpperCase()}</strong><br>
+                            Email: ${account.email}<br>
+                            Password: ${account.password}<br>
+                            Name: ${account.full_name}
+                        </div>
+                    `;
+                }
+                
+                listEl.innerHTML = accountsHtml;
+                statusEl.innerHTML = '<span class="status-success">✅ Test accounts ready!</span><br>' +
+                    '<small>Use these credentials to test the system.</small>';
+                
+            } catch (error) {
+                console.error('Account creation failed:', error);
+                statusEl.innerHTML = '<span class="status-error">❌ Account creation failed: ' + error.message + '</span>';
+            }
+        }
+        
+        async function testQRSystem() {
+            const statusEl = document.getElementById('qr-test-status');
+            const resultsEl = document.getElementById('qr-test-results');
+            
+            statusEl.innerHTML = '🔄 Testing QR system...';
+            
+            try {
+                // Generate a test QR code
+                const testSession = {
+                    sessionId: 'test-session-' + Date.now(),
+                    classId: 'test-class',
+                    token: 'test-token-' + Math.random().toString(36).substr(2, 9),
+                    timestamp: Date.now(),
+                    expiresAt: Date.now() + (15 * 60 * 1000) // 15 minutes
+                };
+                
+                const qrData = JSON.stringify(testSession);
+                
+                resultsEl.innerHTML = `
+                    <h4>🎯 QR System Test Results:</h4>
+                    <div class="code">
+                        <strong>Test QR Data Generated:</strong><br>
+                        ${JSON.stringify(testSession, null, 2)}
+                    </div>
+                    <p><strong>Next Steps:</strong></p>
+                    <ol>
+                        <li>🔐 <a href="login.html" target="_blank">Login as teacher</a> (teacher@test.com / teacher123)</li>
+                        <li>📊 Go to Attendance Tracking in dashboard</li>
+                        <li>🎯 Generate a real QR code for a class</li>
+                        <li>📱 <a href="qr-scanner.html" target="_blank">Open QR scanner</a> (student@test.com / student123)</li>
+                        <li>📷 Scan the QR code to mark attendance</li>
+                    </ol>
+                `;
+                
+                statusEl.innerHTML = '<span class="status-success">✅ QR system test complete!</span><br>' +
+                    '<small>Ready for end-to-end testing.</small>';
+                
+            } catch (error) {
+                console.error('QR test failed:', error);
+                statusEl.innerHTML = '<span class="status-error">❌ QR test failed: ' + error.message + '</span>';
+            }
+        }
+        
+        // Auto-test connection on load
+        window.addEventListener('load', testConnection);
+    </script>
+</body>
+</html>

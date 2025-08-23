@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Flow Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        
+        .success { border-color: #4CAF50; background-color: #f8fff8; }
+        .error { border-color: #f44336; background-color: #fff8f8; }
+        .warning { border-color: #ff9800; background-color: #fff8f0; }
+        
+        .test-button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        .test-button:hover {
+            background: #1976D2;
+        }
+        
+        .log {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Complete Authentication Flow Test</h1>
+    
+    <div class="test-section">
+        <h3>Test 1: Function Availability</h3>
+        <p>Checking if required functions are loaded from home.js:</p>
+        <button class="test-button" onclick="testFunctionAvailability()">Test Functions</button>
+        <div id="function-test-log" class="log"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 2: Direct Function Calls</h3>
+        <p>Test calling functions directly:</p>
+        <button class="test-button" onclick="testToggleDropdown()">Test Toggle Dropdown</button>
+        <button class="test-button" onclick="testRedirectLogin()">Test Login Redirect</button>
+        <button class="test-button" onclick="testRedirectSignup()">Test Signup Redirect</button>
+        <div id="direct-test-log" class="log"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 3: URL Parameter Test</h3>
+        <p>Test login.html with different parameters:</p>
+        <button class="test-button" onclick="openLogin('login')">Open Login Form</button>
+        <button class="test-button" onclick="openLogin('signup')">Open Signup Form</button>
+        <button class="test-button" onclick="openLogin('')">Open Default Form</button>
+        <div id="url-test-log" class="log"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 4: Full Home.html Test</h3>
+        <p>Open the actual home.html page:</p>
+        <button class="test-button" onclick="openHome()">Open Home Page</button>
+        <div id="home-test-log" class="log"></div>
+    </div>
+    
+    <script src="home.js"></script>
+    
+    <script>
+        function log(sectionId, message, type = 'info') {
+            const logElement = document.getElementById(sectionId);
+            const timestamp = new Date().toLocaleTimeString();
+            const typePrefix = type === 'error' ? 'ERROR: ' : type === 'success' ? 'SUCCESS: ' : '';
+            logElement.textContent += `[${timestamp}] ${typePrefix}${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+        
+        function testFunctionAvailability() {
+            const logId = 'function-test-log';
+            document.getElementById(logId).textContent = '';
+            
+            log(logId, 'Testing function availability...');
+            log(logId, `toggleAuthDropdown: ${typeof window.toggleAuthDropdown}`, typeof window.toggleAuthDropdown === 'function' ? 'success' : 'error');
+            log(logId, `redirectToLogin: ${typeof window.redirectToLogin}`, typeof window.redirectToLogin === 'function' ? 'success' : 'error');
+            log(logId, `closeAuthDropdown: ${typeof window.closeAuthDropdown}`, typeof window.closeAuthDropdown === 'function' ? 'success' : 'error');
+            log(logId, `handleClickOutside: ${typeof window.handleClickOutside}`, typeof window.handleClickOutside === 'function' ? 'success' : 'error');
+        }
+        
+        function testToggleDropdown() {
+            const logId = 'direct-test-log';
+            log(logId, 'Testing toggleAuthDropdown function...');
+            
+            try {
+                if (typeof window.toggleAuthDropdown === 'function') {
+                    // Create mock elements for testing
+                    const mockDropdown = document.createElement('div');
+                    mockDropdown.id = 'auth-dropdown';
+                    
+                    const mockMenu = document.createElement('div');
+                    mockMenu.id = 'auth-dropdown-menu';
+                    
+                    document.body.appendChild(mockDropdown);
+                    document.body.appendChild(mockMenu);
+                    
+                    window.toggleAuthDropdown();
+                    log(logId, 'toggleAuthDropdown called successfully', 'success');
+                    
+                    // Clean up
+                    document.body.removeChild(mockDropdown);
+                    document.body.removeChild(mockMenu);
+                } else {
+                    log(logId, 'toggleAuthDropdown function not available', 'error');
+                }
+            } catch (error) {
+                log(logId, `Error calling toggleAuthDropdown: ${error.message}`, 'error');
+            }
+        }
+        
+        function testRedirectLogin() {
+            const logId = 'direct-test-log';
+            log(logId, 'Testing redirectToLogin function with mode "login"...');
+            
+            try {
+                if (typeof window.redirectToLogin === 'function') {
+                    // We can't actually redirect in a test, but we can see if the function runs
+                    const originalHref = window.location.href;
+                    
+                    // Mock window.location.href
+                    let capturedHref = null;
+                    Object.defineProperty(window.location, 'href', {
+                        get: () => originalHref,
+                        set: (value) => { capturedHref = value; },
+                        configurable: true
+                    });
+                    
+                    setTimeout(() => {
+                        window.redirectToLogin('login');
+                        setTimeout(() => {
+                            if (capturedHref) {
+                                log(logId, `Redirect captured: ${capturedHref}`, 'success');
+                            } else {
+                                log(logId, 'No redirect captured (function may have delay)', 'warning');
+                            }
+                        }, 400);
+                    }, 100);
+                } else {
+                    log(logId, 'redirectToLogin function not available', 'error');
+                }
+            } catch (error) {
+                log(logId, `Error testing redirectToLogin: ${error.message}`, 'error');
+            }
+        }
+        
+        function testRedirectSignup() {
+            const logId = 'direct-test-log';
+            log(logId, 'Testing redirectToLogin function with mode "signup"...');
+            
+            try {
+                if (typeof window.redirectToLogin === 'function') {
+                    log(logId, 'redirectToLogin function is available', 'success');
+                    log(logId, 'Note: Actual redirect test performed in login test section');
+                } else {
+                    log(logId, 'redirectToLogin function not available', 'error');
+                }
+            } catch (error) {
+                log(logId, `Error testing redirectToLogin: ${error.message}`, 'error');
+            }
+        }
+        
+        function openLogin(mode) {
+            const logId = 'url-test-log';
+            const url = mode ? `login.html?form=${mode}` : 'login.html';
+            log(logId, `Opening: ${url}`);
+            window.open(url, '_blank');
+        }
+        
+        function openHome() {
+            const logId = 'home-test-log';
+            log(logId, 'Opening home.html in new tab...');
+            window.open('home.html', '_blank');
+            log(logId, 'Instructions: In the home page, click on "Account" button and then "Login" or "Sign Up"');
+        }
+        
+        // Auto-run function availability test on load
+        window.addEventListener('load', () => {
+            setTimeout(testFunctionAvailability, 100);
+        });
+    </script>
+</body>
+</html>

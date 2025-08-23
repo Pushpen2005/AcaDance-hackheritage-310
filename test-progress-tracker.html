@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Progress Tracker - QR Attendance</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .progress-overview {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .progress-ring {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 20px;
+            position: relative;
+        }
+
+        .progress-circle {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: conic-gradient(#28a745 0deg 0deg, #e9ecef 0deg 360deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s ease;
+        }
+
+        .progress-text {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .checklist-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .checklist-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .checklist-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .checklist-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 18px;
+            color: white;
+        }
+
+        .checklist-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .checklist-item:hover {
+            background: #f8f9fa;
+        }
+
+        .checklist-item:last-child {
+            border-bottom: none;
+        }
+
+        .item-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            margin-right: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .item-checkbox.checked {
+            background: #28a745;
+            border-color: #28a745;
+            color: white;
+        }
+
+        .item-text {
+            flex: 1;
+            font-size: 14px;
+        }
+
+        .item-status {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .test-links {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+        }
+
+        .links-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .link-card {
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            text-align: center;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: #333;
+        }
+
+        .link-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            text-decoration: none;
+            color: #667eea;
+        }
+
+        .completion-summary {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .checklist-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                justify-content: center;
+            }
+            
+            .links-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Test Progress Tracker</h1>
+            <p>Complete flow testing for QR Attendance System</p>
+        </div>
+
+        <div class="progress-overview">
+            <div class="progress-ring">
+                <div class="progress-circle" id="progressCircle">
+                    <div class="progress-text" id="progressText">0%</div>
+                </div>
+            </div>
+            <h3>Overall Progress</h3>
+            <p id="progressDescription">Click items below to mark them as completed</p>
+        </div>
+
+        <div class="checklist-container">
+            <!-- Database Setup -->
+            <div class="checklist-card">
+                <div class="checklist-header">
+                    <div class="checklist-icon" style="background: #2196F3;">🗄️</div>
+                    <div class="checklist-title">Database Setup</div>
+                </div>
+                <div id="databaseTasks">
+                    <div class="checklist-item" data-task="supabase-project">
+                        <div class="item-checkbox"></div>
+                        <div class="item-text">Create Supabase project</div>
+                        <div class="item-status status-pending">Pending</div>
+                    </div>
+                    <div class="checklist-item" data-task="run-sql-setup">
+                        <div class="item-checkbox"></div>
+                        <div class="item-text">Run SQL setup script</div>
+                        <div class="item-status status-pending">Pending</div>
+                    </div>
+                    <div class="checklist-item" data-task="verify-tables">
+                        <div class="item-checkbox"></div>
+                        <div class="item-text">Verify tables created</div>
+                        <div class="item-status status-pending">Pending</div>
+                    </div>
+                    <div class="checklist-item" data-task="test-functions">
+                        <div class="item-checkbox"></div>
+                        <div class="item-text">Test RPC functions</div>
+                        <div class="item-status status-pending">Pending</div>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <a href="./setup-test.html" class="btn btn-primary">Database Setup</a>
+                    <button class="btn btn-warning" onclick="openSupabase()">Open Supabase</button>
+                </div>
+            </div>
+
+            <!-- System Tests -->
+            <div class="checklist-card">
+                <div class="checklist-header">
+                    <div class="checklist-icon" style="background: #FF9800;">🧪</div>
+                    <div class="checklist-title">System Tests</div>
+                </div>
+                <div id="systemTasks">
+                    <div class="checklist-item" data-task="config-test">
+                        <div class="item-checkbox"></div>
+                        <div class="item-text">Supabase configuration test</div>
+                        <div class="item-status status-pending">Pending</div>
+                    </div>
+                    <div class="checklist-item" data-task="libraries-test">
+                        <div class="item-checkbox"></div>
+                        <div class="item-text">Client libraries test</div>
+                        <div class="item-status status-pending">Pending</div>
+                    </div>
+                    <div class="checklist-item" data-task="schema-test">
+                        <div class="item-checkbox"></div>
+                        <div class="item-text">Database schema test</div>
+                        <div class="item-status status-pending">Pending</div>
+                    </div>
+                    <div class="checklist-item" data-task="rls-test">
+                        <div class="item-checkbox"></div>
+                        <div class="item-text">RLS policies test</div>
+                        <div class="item-status status-pending">Pending</div>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <a href="./final-verification.html" class="btn btn-success">Run Tests</a>
+                </div>
+            </div>
+
+            <!-- Authentication -->
+            <div class="checklist-card">
+                <div class="checklist-header">
+                    <div class="checklist-icon" style="background: #4CAF50;">🔐</div>
+                    <div class="checklist-title">Authentication</div>
+                </div>
+                <div id="authTasks">
+                    <div class="checklist-item" data-task="teacher-signup">
+                        <div class="item-checkbox"></div>
+                        <div class="item-text">Create teacher account</div>
+                        <div class="item-status status-pending">Pending</div>
+                    </div>
+                    <div class="checklist-item" data-task="student-signup">
+                        <div class="item-checkbox"></div>
+                        <div class="item-text">Create student account</div>
+                        <div class="item-status status-pending">Pending</div>
+                    </div>
+                    <div class="checklist-item" data-task="teacher-login">
+                        <div class="item-checkbox"></div>
+                        <div class="item-text">Test teacher login</div>
+                        <div class="item-status status-pending">Pending</div>
+                    </div>
+                    <div class="checklist-item" data-task="student-login">
+                        <div class="item-checkbox"></div>
+                        <div class="item-text">Test student login</div>
+                        <div class="item-status status-pending">Pending</div>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <a href="./login.html" class="btn btn-primary">Login/Signup</a>
+                </div>
+            </div>
+
+            <!-- QR Features -->
+            <div class="checklist-card">
+                <div class="checklist-header">
+                    <div class="checklist-icon" style="background: #9C27B0;">📱</div>
+                    <div class="checklist-title">QR Features</div>
+                </div>
+                <div id="qrTasks">
+                    <div class="checklist-item" data-task="qr-generation">
+                        <div class="item-checkbox"></div>
+                        <div class="item-text">Generate QR codes</div>
+                        <div class="item-status status-pending">Pending</div>
+                    </div>
+                    <div class="checklist-item" data-task="qr-scanning">
+                        <div class="item-checkbox"></div>
+                        <div class="item-text">Scan QR codes</div>
+                        <div class="item-status status-pending">Pending</div>
+                    </div>
+                    <div class="checklist-item" data-task="attendance-marking">
+                        <div class="item-checkbox"></div>
+                        <div class="item-text">Mark attendance</div>
+                        <div class="item-status status-pending">Pending</div>
+                    </div>
+                    <div class="checklist-item" data-task="mobile-testing">
+                        <div class="item-checkbox"></div>
+                        <div class="item-text">Mobile device testing</div>
+                        <div class="item-status status-pending">Pending</div>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <a href="./qr-scanner.html" class="btn btn-success">QR Scanner</a>
+                    <a href="./mobile-test.html" class="btn btn-warning">Mobile Test</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-links">
+            <h3>🔗 Quick Test Links</h3>
+            <div class="links-grid">
+                <a href="./index.html" class="link-card">
+                    🏠<br><strong>Landing Page</strong>
+                </a>
+                <a href="./login.html" class="link-card">
+                    🔐<br><strong>Login/Signup</strong>
+                </a>
+                <a href="./home.html" class="link-card">
+                    📊<br><strong>Dashboard</strong>
+                </a>
+                <a href="./qr-scanner.html" class="link-card">
+                    📱<br><strong>QR Scanner</strong>
+                </a>
+                <a href="./setup-test.html" class="link-card">
+                    ⚙️<br><strong>DB Setup</strong>
+                </a>
+                <a href="./final-verification.html" class="link-card">
+                    🧪<br><strong>System Tests</strong>
+                </a>
+                <a href="./mobile-test.html" class="link-card">
+                    📱<br><strong>Mobile Test</strong>
+                </a>
+                <a href="./system-status.html" class="link-card">
+                    📈<br><strong>Status</strong>
+                </a>
+            </div>
+        </div>
+
+        <div class="completion-summary">
+            <h3>📊 Completion Summary</h3>
+            <div id="summaryContent">
+                <p>Progress will be tracked as you complete tasks above.</p>
+            </div>
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn btn-success" onclick="generateFinalReport()">
+                    📋 Generate Final Report
+                </button>
+                <button class="btn btn-warning" onclick="resetProgress()">
+                    🔄 Reset Progress
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let completedTasks = new Set();
+        let totalTasks = 0;
+
+        // Load saved progress
+        document.addEventListener('DOMContentLoaded', function() {
+            loadProgress();
+            setupEventListeners();
+            updateProgress();
+        });
+
+        function setupEventListeners() {
+            // Add click listeners to all checklist items
+            document.querySelectorAll('.checklist-item').forEach(item => {
+                totalTasks++;
+                item.addEventListener('click', function() {
+                    toggleTask(item);
+                });
+            });
+        }
+
+        function toggleTask(item) {
+            const taskId = item.dataset.task;
+            const checkbox = item.querySelector('.item-checkbox');
+            const status = item.querySelector('.item-status');
+
+            if (completedTasks.has(taskId)) {
+                // Mark as incomplete
+                completedTasks.delete(taskId);
+                checkbox.classList.remove('checked');
+                checkbox.innerHTML = '';
+                status.textContent = 'Pending';
+                status.className = 'item-status status-pending';
+            } else {
+                // Mark as complete
+                completedTasks.add(taskId);
+                checkbox.classList.add('checked');
+                checkbox.innerHTML = '✓';
+                status.textContent = 'Completed';
+                status.className = 'item-status status-completed';
+            }
+
+            saveProgress();
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const completed = completedTasks.size;
+            const percentage = Math.round((completed / totalTasks) * 100);
+            
+            // Update progress circle
+            const progressCircle = document.getElementById('progressCircle');
+            const progressText = document.getElementById('progressText');
+            const progressDescription = document.getElementById('progressDescription');
+            
+            progressText.textContent = `${percentage}%`;
+            progressDescription.textContent = `${completed} of ${totalTasks} tasks completed`;
+            
+            // Update circle color
+            const angle = (percentage / 100) * 360;
+            progressCircle.style.background = `conic-gradient(#28a745 0deg ${angle}deg, #e9ecef ${angle}deg 360deg)`;
+            
+            // Update completion summary
+            updateCompletionSummary(completed, totalTasks, percentage);
+        }
+
+        function updateCompletionSummary(completed, total, percentage) {
+            const summaryContent = document.getElementById('summaryContent');
+            
+            // Calculate category progress
+            const categories = {
+                'Database': ['supabase-project', 'run-sql-setup', 'verify-tables', 'test-functions'],
+                'System Tests': ['config-test', 'libraries-test', 'schema-test', 'rls-test'],
+                'Authentication': ['teacher-signup', 'student-signup', 'teacher-login', 'student-login'],
+                'QR Features': ['qr-generation', 'qr-scanning', 'attendance-marking', 'mobile-testing']
+            };
+
+            let categoryProgress = '';
+            Object.entries(categories).forEach(([category, tasks]) => {
+                const completedInCategory = tasks.filter(task => completedTasks.has(task)).length;
+                const categoryPercentage = Math.round((completedInCategory / tasks.length) * 100);
+                const status = categoryPercentage === 100 ? '✅' : categoryPercentage > 0 ? '🟡' : '⭕';
+                
+                categoryProgress += `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+                        <span>${status} ${category}</span>
+                        <span><strong>${completedInCategory}/${tasks.length}</strong> (${categoryPercentage}%)</span>
+                    </div>
+                `;
+            });
+
+            const readyForProduction = percentage === 100;
+            const statusMessage = readyForProduction ? 
+                '🎉 <strong>System Ready for Production!</strong>' : 
+                `📈 <strong>${completed}/${total}</strong> tasks completed. Keep going!`;
+
+            summaryContent.innerHTML = `
+                <div style="margin-bottom: 20px;">
+                    ${statusMessage}
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <strong>Category Progress:</strong>
+                </div>
+                ${categoryProgress}
+                <div style="margin-top: 15px; padding: 15px; background: ${readyForProduction ? '#d4edda' : '#fff3cd'}; border-radius: 8px;">
+                    ${readyForProduction ? 
+                        '<strong>🚀 All tests completed! Your QR Attendance System is ready for deployment.</strong>' :
+                        '<strong>📋 Next Steps:</strong> Complete the remaining tasks to finish system verification.'
+                    }
+                </div>
+            `;
+        }
+
+        function saveProgress() {
+            localStorage.setItem('qr-attendance-progress', JSON.stringify(Array.from(completedTasks)));
+        }
+
+        function loadProgress() {
+            const saved = localStorage.getItem('qr-attendance-progress');
+            if (saved) {
+                completedTasks = new Set(JSON.parse(saved));
+                
+                // Update UI for completed tasks
+                completedTasks.forEach(taskId => {
+                    const item = document.querySelector(`[data-task="${taskId}"]`);
+                    if (item) {
+                        const checkbox = item.querySelector('.item-checkbox');
+                        const status = item.querySelector('.item-status');
+                        
+                        checkbox.classList.add('checked');
+                        checkbox.innerHTML = '✓';
+                        status.textContent = 'Completed';
+                        status.className = 'item-status status-completed';
+                    }
+                });
+            }
+        }
+
+        function resetProgress() {
+            if (confirm('Are you sure you want to reset all progress? This cannot be undone.')) {
+                completedTasks.clear();
+                localStorage.removeItem('qr-attendance-progress');
+                
+                // Reset UI
+                document.querySelectorAll('.checklist-item').forEach(item => {
+                    const checkbox = item.querySelector('.item-checkbox');
+                    const status = item.querySelector('.item-status');
+                    
+                    checkbox.classList.remove('checked');
+                    checkbox.innerHTML = '';
+                    status.textContent = 'Pending';
+                    status.className = 'item-status status-pending';
+                });
+                
+                updateProgress();
+            }
+        }
+
+        function generateFinalReport() {
+            const completed = completedTasks.size;
+            const percentage = Math.round((completed / totalTasks) * 100);
+            const timestamp = new Date().toISOString();
+            
+            const report = {
+                timestamp,
+                systemName: 'QR Attendance System',
+                version: '1.0.0',
+                testingPhase: 'Complete Flow Testing',
+                overallProgress: {
+                    completed,
+                    total: totalTasks,
+                    percentage
+                },
+                completedTasks: Array.from(completedTasks),
+                categories: {
+                    database: {
+                        tasks: ['supabase-project', 'run-sql-setup', 'verify-tables', 'test-functions'],
+                        completed: ['supabase-project', 'run-sql-setup', 'verify-tables', 'test-functions'].filter(t => completedTasks.has(t)).length
+                    },
+                    systemTests: {
+                        tasks: ['config-test', 'libraries-test', 'schema-test', 'rls-test'],
+                        completed: ['config-test', 'libraries-test', 'schema-test', 'rls-test'].filter(t => completedTasks.has(t)).length
+                    },
+                    authentication: {
+                        tasks: ['teacher-signup', 'student-signup', 'teacher-login', 'student-login'],
+                        completed: ['teacher-signup', 'student-signup', 'teacher-login', 'student-login'].filter(t => completedTasks.has(t)).length
+                    },
+                    qrFeatures: {
+                        tasks: ['qr-generation', 'qr-scanning', 'attendance-marking', 'mobile-testing'],
+                        completed: ['qr-generation', 'qr-scanning', 'attendance-marking', 'mobile-testing'].filter(t => completedTasks.has(t)).length
+                    }
+                },
+                readyForProduction: percentage === 100,
+                recommendations: percentage === 100 ? 
+                    ['System is ready for production deployment', 'Consider performance optimization', 'Set up monitoring and analytics'] :
+                    ['Complete remaining tasks', 'Focus on failed tests', 'Verify all features work end-to-end']
+            };
+            
+            // Download report as JSON
+            const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `qr-attendance-test-report-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            alert('📋 Test report downloaded successfully!');
+        }
+
+        function openSupabase() {
+            window.open('https://supabase.com/dashboard/projects', '_blank');
+        }
+    </script>
+</body>
+</html>

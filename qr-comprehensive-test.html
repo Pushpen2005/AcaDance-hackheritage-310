@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Library Comprehensive Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin: 20px 0;
+        }
+        
+        .success { border-left: 4px solid #4CAF50; background: #f8fff8; }
+        .error { border-left: 4px solid #f44336; background: #fff8f8; }
+        .loading { border-left: 4px solid #2196F3; background: #f8f9ff; }
+        .warning { border-left: 4px solid #ff9800; background: #fff8f0; }
+        
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        
+        .log {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 15px;
+            font-size: 12px;
+        }
+        
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        button:hover {
+            background: #1976D2;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .camera-preview {
+            width: 100%;
+            max-width: 300px;
+            height: 200px;
+            border: 2px dashed #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f9f9f9;
+        }
+        
+        #qr-reader {
+            width: 100%;
+            max-width: 300px;
+        }
+        
+        .info-panel {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 QR Library Comprehensive Test</h1>
+    
+    <div class="test-container loading">
+        <h3>📊 Overall Status</h3>
+        <div id="overall-status">Initializing comprehensive tests...</div>
+        <div class="info-panel">
+            <strong>Test Coverage:</strong>
+            <ul>
+                <li>Library Loading (Multiple CDNs)</li>
+                <li>Camera API Availability</li>
+                <li>QR Code Generation</li>
+                <li>QR Code Scanning</li>
+                <li>Error Handling</li>
+                <li>Browser Compatibility</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="grid">
+        <div class="test-container">
+            <h3>🔧 Test Controls</h3>
+            <button onclick="runFullDiagnostic()">Run Full Diagnostic</button>
+            <button onclick="testLibraryLoading()">Test Library Loading</button>
+            <button onclick="testCameraAPI()">Test Camera API</button>
+            <button onclick="testQRGeneration()">Test QR Generation</button>
+            <button onclick="testQRScanning()" id="scan-btn" disabled>Test QR Scanning</button>
+            <button onclick="clearLog()">Clear Log</button>
+            <button onclick="location.reload()">Refresh Page</button>
+        </div>
+
+        <div class="test-container">
+            <h3>📱 QR Code Generation Test</h3>
+            <div id="qr-generation-result"></div>
+            <canvas id="qr-canvas" style="border: 1px solid #ddd; margin-top: 10px;"></canvas>
+        </div>
+
+        <div class="test-container">
+            <h3>📷 Camera Test</h3>
+            <div id="camera-test-result">Camera not tested yet</div>
+            <div id="qr-reader" class="camera-preview">
+                Camera preview will appear here
+            </div>
+            <div id="qr-result" style="margin-top: 10px; font-weight: bold;"></div>
+        </div>
+    </div>
+
+    <div class="test-container">
+        <h3>📝 Detailed Test Log</h3>
+        <div id="test-log" class="log">Initializing comprehensive test system...\n</div>
+    </div>
+
+    <div class="test-container">
+        <h3>🔗 Navigation</h3>
+        <a href="qr-scanner.html" style="text-decoration: none;">
+            <button>Open Main QR Scanner</button>
+        </a>
+        <a href="home.html" style="text-decoration: none;">
+            <button>Back to Home</button>
+        </a>
+        <a href="qr-library-test.html" style="text-decoration: none;">
+            <button>Simple QR Test</button>
+        </a>
+    </div>
+
+    <!-- Library Loading with Advanced Fallback System -->
+    <script>
+        // Global state management
+        window.QRTestSystem = {
+            libraries: {
+                qrious: { loaded: false, source: null, error: null },
+                html5qrcode: { loaded: false, source: null, error: null }
+            },
+            camera: { available: false, devices: [], error: null },
+            scanner: null,
+            scannerActive: false
+        };
+
+        // Enhanced logging system
+        function log(message, type = 'info') {
+            const logElement = document.getElementById('test-log');
+            const timestamp = new Date().toISOString().substr(11, 8);
+            const prefix = {
+                'info': 'ℹ️',
+                'success': '✅',
+                'error': '❌',
+                'warning': '⚠️',
+                'debug': '🔍'
+            }[type] || 'ℹ️';
+            
+            const logMessage = `[${timestamp}] ${prefix} ${message}`;
+            logElement.textContent += logMessage + '\n';
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(logMessage);
+        }
+
+        function updateOverallStatus(message, type = 'loading') {
+            const statusElement = document.getElementById('overall-status');
+            const container = statusElement.parentElement;
+            
+            container.className = `test-container ${type}`;
+            statusElement.textContent = message;
+        }
+
+        // Advanced script loading with retry mechanism
+        function loadScriptWithRetry(src, name, maxRetries = 3) {
+            return new Promise(async (resolve, reject) => {
+                for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                    try {
+                        await new Promise((resolveLoad, rejectLoad) => {
+                            const script = document.createElement('script');
+                            script.src = src;
+                            script.onload = resolveLoad;
+                            script.onerror = rejectLoad;
+                            script.timeout = 10000; // 10 second timeout
+                            document.head.appendChild(script);
+                        });
+                        
+                        log(`${name} loaded successfully from ${src} (attempt ${attempt})`, 'success');
+                        resolve({ source: src, attempt });
+                        return;
+                    } catch (error) {
+                        log(`${name} failed to load from ${src} (attempt ${attempt}): ${error.message}`, 'warning');
+                        if (attempt < maxRetries) {
+                            await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Progressive delay
+                        }
+                    }
+                }
+                reject(new Error(`Failed to load ${name} after ${maxRetries} attempts`));
+            });
+        }
+
+        // Library loading with multiple CDN fallbacks
+        async function loadLibrariesWithFallbacks() {
+            log('Starting library loading with fallback system...', 'info');
+            
+            const cdnSources = {
+                qrious: [
+                    'https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js',
+                    'https://unpkg.com/qrious@4.0.2/dist/qrious.min.js',
+                    'https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js'
+                ],
+                html5qrcode: [
+                    'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/minified/html5-qrcode.min.js',
+                    'https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js',
+                    'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.4/minified/html5-qrcode.min.js',
+                    'https://unpkg.com/html5-qrcode@2.3.4/minified/html5-qrcode.min.js'
+                ]
+            };
+
+            // Load QRious library
+            for (const src of cdnSources.qrious) {
+                try {
+                    const result = await loadScriptWithRetry(src, 'QRious', 2);
+                    if (typeof QRious !== 'undefined') {
+                        window.QRTestSystem.libraries.qrious = { loaded: true, source: result.source, error: null };
+                        log('QRious library verified and ready', 'success');
+                        break;
+                    }
+                } catch (error) {
+                    window.QRTestSystem.libraries.qrious.error = error.message;
+                }
+            }
+
+            // Load Html5Qrcode library
+            for (const src of cdnSources.html5qrcode) {
+                try {
+                    const result = await loadScriptWithRetry(src, 'Html5Qrcode', 2);
+                    // Wait a bit for the library to initialize
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
+                    if (typeof Html5Qrcode !== 'undefined') {
+                        window.QRTestSystem.libraries.html5qrcode = { loaded: true, source: result.source, error: null };
+                        log('Html5Qrcode library verified and ready', 'success');
+                        break;
+                    }
+                } catch (error) {
+                    window.QRTestSystem.libraries.html5qrcode.error = error.message;
+                }
+            }
+
+            return window.QRTestSystem.libraries;
+        }
+
+        // Test functions
+        async function testLibraryLoading() {
+            log('=== LIBRARY LOADING TEST ===', 'info');
+            
+            const libraries = await loadLibrariesWithFallbacks();
+            
+            // Test QRious
+            if (libraries.qrious.loaded) {
+                log(`✅ QRious: Loaded from ${libraries.qrious.source}`, 'success');
+                log(`   - Constructor type: ${typeof QRious}`, 'debug');
+                try {
+                    const testQR = new QRious({ value: 'test' });
+                    log(`   - Test instance created successfully`, 'success');
+                } catch (error) {
+                    log(`   - Test instance failed: ${error.message}`, 'error');
+                }
+            } else {
+                log(`❌ QRious: Failed to load - ${libraries.qrious.error}`, 'error');
+            }
+
+            // Test Html5Qrcode
+            if (libraries.html5qrcode.loaded) {
+                log(`✅ Html5Qrcode: Loaded from ${libraries.html5qrcode.source}`, 'success');
+                log(`   - Constructor type: ${typeof Html5Qrcode}`, 'debug');
+                log(`   - getCameras method: ${typeof Html5Qrcode.getCameras}`, 'debug');
+                if (Html5Qrcode.version) {
+                    log(`   - Version: ${Html5Qrcode.version}`, 'debug');
+                }
+                
+                // Enable scanning button
+                document.getElementById('scan-btn').disabled = false;
+            } else {
+                log(`❌ Html5Qrcode: Failed to load - ${libraries.html5qrcode.error}`, 'error');
+            }
+        }
+
+        async function testCameraAPI() {
+            log('=== CAMERA API TEST ===', 'info');
+            
+            // Test navigator.mediaDevices
+            if (!navigator.mediaDevices) {
+                log('❌ navigator.mediaDevices not available', 'error');
+                window.QRTestSystem.camera.error = 'MediaDevices API not supported';
+                return;
+            }
+
+            if (!navigator.mediaDevices.getUserMedia) {
+                log('❌ getUserMedia not available', 'error');
+                window.QRTestSystem.camera.error = 'getUserMedia not supported';
+                return;
+            }
+
+            log('✅ MediaDevices API available', 'success');
+
+            // Test camera enumeration
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                
+                log(`📱 Found ${videoDevices.length} video input devices:`, 'info');
+                videoDevices.forEach((device, index) => {
+                    log(`   ${index + 1}. ${device.label || 'Camera ' + (index + 1)} (${device.deviceId.substr(0, 8)}...)`, 'debug');
+                });
+
+                window.QRTestSystem.camera.devices = videoDevices;
+                window.QRTestSystem.camera.available = videoDevices.length > 0;
+
+                if (videoDevices.length === 0) {
+                    log('⚠️ No video input devices found', 'warning');
+                    document.getElementById('camera-test-result').innerHTML = '⚠️ No cameras detected';
+                } else {
+                    document.getElementById('camera-test-result').innerHTML = `✅ ${videoDevices.length} camera(s) available`;
+                }
+
+            } catch (error) {
+                log(`❌ Camera enumeration failed: ${error.message}`, 'error');
+                window.QRTestSystem.camera.error = error.message;
+                document.getElementById('camera-test-result').innerHTML = `❌ Camera test failed: ${error.message}`;
+            }
+        }
+
+        function testQRGeneration() {
+            log('=== QR GENERATION TEST ===', 'info');
+            
+            if (!window.QRTestSystem.libraries.qrious.loaded) {
+                log('❌ QRious library not loaded', 'error');
+                document.getElementById('qr-generation-result').innerHTML = '❌ QRious not available';
+                return;
+            }
+
+            try {
+                const canvas = document.getElementById('qr-canvas');
+                const qr = new QRious({
+                    element: canvas,
+                    value: `Test QR Code - ${new Date().toISOString()}`,
+                    size: 200,
+                    level: 'M'
+                });
+
+                log('✅ QR code generated successfully', 'success');
+                document.getElementById('qr-generation-result').innerHTML = '✅ QR code generated successfully';
+                
+            } catch (error) {
+                log(`❌ QR generation failed: ${error.message}`, 'error');
+                document.getElementById('qr-generation-result').innerHTML = `❌ Generation failed: ${error.message}`;
+            }
+        }
+
+        async function testQRScanning() {
+            log('=== QR SCANNING TEST ===', 'info');
+
+            if (!window.QRTestSystem.libraries.html5qrcode.loaded) {
+                log('❌ Html5Qrcode library not loaded', 'error');
+                return;
+            }
+
+            if (window.QRTestSystem.scannerActive) {
+                log('🛑 Stopping existing scanner...', 'info');
+                await stopScanner();
+                return;
+            }
+
+            try {
+                const html5QrCode = new Html5Qrcode("qr-reader");
+                window.QRTestSystem.scanner = html5QrCode;
+                
+                const config = { 
+                    fps: 10, 
+                    qrbox: { width: 250, height: 250 },
+                    aspectRatio: 1.0
+                };
+
+                await html5QrCode.start(
+                    { facingMode: "environment" },
+                    config,
+                    (decodedText, decodedResult) => {
+                        log(`🎉 QR Code detected: ${decodedText}`, 'success');
+                        document.getElementById('qr-result').innerHTML = `✅ Scanned: ${decodedText}`;
+                    },
+                    (errorMessage) => {
+                        // Ignore frequent scanning errors, only log occasionally
+                        if (Math.random() < 0.001) {
+                            log(`Scanning... (${errorMessage})`, 'debug');
+                        }
+                    }
+                );
+
+                window.QRTestSystem.scannerActive = true;
+                log('✅ QR scanner started successfully', 'success');
+                document.getElementById('scan-btn').textContent = 'Stop Scanning';
+                
+            } catch (error) {
+                log(`❌ Scanner start failed: ${error.message}`, 'error');
+                window.QRTestSystem.scannerActive = false;
+            }
+        }
+
+        async function stopScanner() {
+            if (window.QRTestSystem.scanner && window.QRTestSystem.scannerActive) {
+                try {
+                    await window.QRTestSystem.scanner.stop();
+                    log('🛑 Scanner stopped successfully', 'info');
+                } catch (error) {
+                    log(`⚠️ Scanner stop error: ${error.message}`, 'warning');
+                }
+                window.QRTestSystem.scannerActive = false;
+                document.getElementById('scan-btn').textContent = 'Test QR Scanning';
+            }
+        }
+
+        async function runFullDiagnostic() {
+            log('🚀 STARTING FULL DIAGNOSTIC SUITE', 'info');
+            updateOverallStatus('Running comprehensive diagnostic...', 'loading');
+            
+            try {
+                await testLibraryLoading();
+                await testCameraAPI();
+                testQRGeneration();
+                
+                // Overall assessment
+                const librariesOK = window.QRTestSystem.libraries.qrious.loaded && window.QRTestSystem.libraries.html5qrcode.loaded;
+                const cameraOK = window.QRTestSystem.camera.available;
+                
+                if (librariesOK && cameraOK) {
+                    updateOverallStatus('✅ All systems operational - Ready for QR scanning!', 'success');
+                    log('🎉 DIAGNOSTIC COMPLETE: All systems operational', 'success');
+                } else if (librariesOK) {
+                    updateOverallStatus('⚠️ Libraries loaded but camera issues detected', 'warning');
+                    log('⚠️ DIAGNOSTIC COMPLETE: Libraries OK, camera issues', 'warning');
+                } else {
+                    updateOverallStatus('❌ Critical issues detected - QR functionality unavailable', 'error');
+                    log('❌ DIAGNOSTIC COMPLETE: Critical failures detected', 'error');
+                }
+                
+            } catch (error) {
+                updateOverallStatus('❌ Diagnostic failed', 'error');
+                log(`❌ DIAGNOSTIC ERROR: ${error.message}`, 'error');
+            }
+        }
+
+        function clearLog() {
+            document.getElementById('test-log').textContent = 'Log cleared.\n';
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            log('🔧 QR Test System initialized', 'info');
+            log('Click "Run Full Diagnostic" to start comprehensive testing', 'info');
+            
+            // Auto-run basic library test
+            setTimeout(() => {
+                testLibraryLoading().then(() => {
+                    log('✨ Initial library test completed', 'info');
+                });
+            }, 1000);
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (window.QRTestSystem.scannerActive) {
+                stopScanner();
+            }
+        });
+    </script>
+</body>
+</html>

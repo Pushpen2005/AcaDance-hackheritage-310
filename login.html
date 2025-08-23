@@ -1122,7 +1122,7 @@
       });
       // Auto-switch forms via URL
       const urlParams = new URLSearchParams(window.location.search);
-      const mode = urlParams.get('mode');
+      const mode = urlParams.get('mode') || urlParams.get('form');
       if (mode === 'signup') switchForm('signup');
       else if (mode === 'reset') switchForm('forgot-password');
       // DO NOT redirect to home.html automatically

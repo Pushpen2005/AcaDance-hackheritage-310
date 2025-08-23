@@ -1513,33 +1513,66 @@ let authDropdownVisible = false;
 
 // Toggle authentication dropdown
 function toggleAuthDropdown() {
-    authDropdownVisible = !authDropdownVisible;
-    const dropdown = document.getElementById('auth-dropdown-menu');
-    const chevron = document.querySelector('.auth-chevron');
+    console.log('Toggle auth dropdown called'); // Debug log
+    const dropdown = document.getElementById('auth-dropdown');
+    const menu = document.getElementById('auth-dropdown-menu');
     
-    if (dropdown) {
-        if (authDropdownVisible) {
-            dropdown.style.display = 'block';
-            dropdown.style.opacity = '1';
-            dropdown.style.transform = 'translateY(0)';
-            if (chevron) chevron.style.transform = 'rotate(180deg)';
+    if (dropdown && menu) {
+        const isShown = menu.classList.contains('show');
+        console.log('Dropdown currently shown:', isShown); // Debug log
+        
+        if (isShown) {
+            dropdown.classList.remove('active');
+            menu.classList.remove('show');
+            document.removeEventListener('click', handleClickOutside);
         } else {
-            dropdown.style.opacity = '0';
-            dropdown.style.transform = 'translateY(-10px)';
-            if (chevron) chevron.style.transform = 'rotate(0deg)';
+            dropdown.classList.add('active');
+            menu.classList.add('show');
+            // Add click outside to close functionality
             setTimeout(() => {
-                dropdown.style.display = 'none';
-            }, 200);
+                document.addEventListener('click', handleClickOutside);
+            }, 0);
         }
+    } else {
+        console.error('Dropdown elements not found'); // Debug log
+    }
+}
+
+function handleClickOutside(event) {
+    const dropdown = document.getElementById('auth-dropdown');
+    if (dropdown && !dropdown.contains(event.target)) {
+        closeAuthDropdown();
+        document.removeEventListener('click', handleClickOutside);
+    }
+}
+
+function closeAuthDropdown() {
+    const dropdown = document.getElementById('auth-dropdown');
+    const menu = document.getElementById('auth-dropdown-menu');
+    
+    if (dropdown && menu) {
+        dropdown.classList.remove('active');
+        menu.classList.remove('show');
     }
 }
 
 // Redirect to login page
-function redirectToLogin(type = 'login') {
-    // Store the redirect type in localStorage for the login page
-    localStorage.setItem('authType', type);
-    // Redirect to login page
-    window.location.href = 'login.html';
+function redirectToLogin(mode = 'login') {
+    console.log('Redirect to login called with mode:', mode); // Debug log
+    closeAuthDropdown();
+    
+    // Show loading state
+    const authBtn = document.getElementById('auth-btn');
+    if (authBtn) {
+        authBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+        authBtn.disabled = true;
+    }
+
+    // Add small delay to ensure dropdown closes smoothly
+    setTimeout(function() {
+        console.log('Redirecting to:', `login.html?form=${mode}`); // Debug log
+        window.location.href = `login.html?form=${mode}`;
+    }, 300);
 }
 
 // Check authentication status

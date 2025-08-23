@@ -1,15 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HH310: Timetable Creator and Automated Attendance System</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Attendance System</title>
   <!-- Font Awesome for icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <!-- Supabase Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- QR Code Library -->
+  <!-- QR Code Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
   <style>
     /* Import Google Fonts */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -1857,6 +1858,9 @@
             <button class="btn btn--primary" onclick="switchTab('timetable')">Generate Timetable</button>
             <button class="btn btn--secondary" onclick="switchTab('attendance')">Mark Attendance</button>
             <button class="btn btn--outline" onclick="switchTab('reports')">View Reports</button>
+            <a href="qr-scanner.html" class="btn btn--primary" style="text-decoration: none;">
+              <i class="fas fa-qrcode"></i> Scan QR for Attendance
+            </a>
           </div>
         </div>
         <div class="todays-schedule">
@@ -2489,26 +2493,6 @@
 
   <script>
     // Global functions that need to be available immediately
-    function toggleAuthDropdown() {
-      const dropdown = document.getElementById('auth-dropdown');
-      const menu = document.getElementById('auth-dropdown-menu');
-      
-      if (dropdown && menu) {
-        dropdown.classList.toggle('active');
-        menu.classList.toggle('show');
-      }
-    }
-    
-    function closeAuthDropdown() {
-      const dropdown = document.getElementById('auth-dropdown');
-      const menu = document.getElementById('auth-dropdown-menu');
-      
-      if (dropdown && menu) {
-        dropdown.classList.remove('active');
-        menu.classList.remove('show');
-      }
-    }
-    
     function closeModal(id) {
       const modal = document.getElementById(id);
       if (modal) {
@@ -2525,13 +2509,6 @@
       if (targetModule) targetModule.classList.add('active');
     }
     
-    function redirectToLogin(mode = 'login') {
-      closeAuthDropdown();
-      // Add small delay to ensure dropdown closes smoothly
-      setTimeout(function() {
-        window.location.href = `login.html?form=${mode}`;
-      }, 100);
-    }
     // Timetable Management with Supabase Integration and Real-time Sync
     class TimetableManager {
       constructor() {
@@ -3179,10 +3156,7 @@
         }
       }
 
-      handleClassroomsChange(payload) {
-        console.log('Classrooms change detected:', payload);
-        
-        if (payload.eventType === 'INSERT') {
+      handleClassroomsChange
           this.classrooms.push(payload.new);
           this.updateClassroomsList();
           this.showNotification('🏫 New classroom added', 'success');
@@ -4003,6 +3977,156 @@
           indicator.style.display = 'flex';
         }
       }, 2000);
+    });
+
+    // Enhanced Authentication Management
+    class AuthManager {
+      constructor() {
+        this.supabase = window.supabaseClient;
+        this.currentUser = null;
+        this.init();
+      }
+
+      async init() {
+        await this.checkAuthState();
+        this.setupAuthListeners();
+      }
+
+      async checkAuthState() {
+        try {
+          if (!this.supabase) {
+            console.log('Supabase client not available');
+            this.showAuthDropdown();
+            return;
+          }
+
+          const { data: { session }, error } = await this.supabase.auth.getSession();
+          
+          if (error) {
+            console.error('Error checking auth state:', error);
+            this.showAuthDropdown();
+            return;
+          }
+
+          if (session && session.user) {
+            this.currentUser = session.user;
+            window.currentUser = session.user;
+            this.showUserMenu(session.user);
+          } else {
+            this.showAuthDropdown();
+          }
+        } catch (error) {
+          console.error('Auth check failed:', error);
+          this.showAuthDropdown();
+        }
+      }
+
+      showAuthDropdown() {
+        const authDropdown = document.getElementById('auth-dropdown');
+        const userMenu = document.getElementById('user-menu');
+        
+        if (authDropdown) authDropdown.classList.remove('hidden');
+        if (userMenu) userMenu.classList.add('hidden');
+      }
+
+      showUserMenu(user) {
+        const authDropdown = document.getElementById('auth-dropdown');
+        const userMenu = document.getElementById('user-menu');
+        const userName = document.getElementById('user-name');
+        
+        if (authDropdown) authDropdown.classList.add('hidden');
+        if (userMenu) userMenu.classList.remove('hidden');
+        if (userName) userName.textContent = user.user_metadata?.name || user.email || 'User';
+      }
+
+      setupAuthListeners() {
+        if (!this.supabase) return;
+
+        this.supabase.auth.onAuthStateChange((event, session) => {
+          console.log('Auth state changed:', event, session);
+          
+          if (event === 'SIGNED_IN' && session) {
+            this.currentUser = session.user;
+            window.currentUser = session.user;
+            this.showUserMenu(session.user);
+            this.showNotification('✅ Successfully signed in!', 'success');
+          } else if (event === 'SIGNED_OUT') {
+            this.currentUser = null;
+            window.currentUser = null;
+            this.showAuthDropdown();
+            this.showNotification('👋 Signed out successfully', 'info');
+          }
+        });
+      }
+
+      showNotification(message, type = 'info') {
+        const container = document.getElementById('notification-container');
+        if (!container) return;
+
+        const notification = document.createElement('div');
+        notification.className = `notification notification--${type}`;
+        notification.innerHTML = `
+          <span>${message}</span>
+          <button onclick="this.parentElement.remove()" class="notification-close">&times;</button>
+        `;
+
+        container.appendChild(notification);
+
+        setTimeout(() => {
+          if (notification.parentElement) {
+            notification.remove();
+          }
+        }, 5000);
+      }
+
+      async logout() {
+        try {
+          if (!this.supabase) {
+            this.showNotification('⚠️ Cannot logout: Connection not available', 'warning');
+            return;
+          }
+
+          const { error } = await this.supabase.auth.signOut();
+          
+          if (error) {
+            console.error('Logout error:', error);
+            this.showNotification('❌ Error signing out: ' + error.message, 'error');
+            return;
+          }
+
+          // Clear local state
+          this.currentUser = null;
+          window.currentUser = null;
+          this.showAuthDropdown();
+          this.showNotification('👋 Signed out successfully', 'info');
+        } catch (error) {
+          console.error('Logout failed:', error);
+          this.showNotification('❌ Logout failed: ' + error.message, 'error');
+        }
+      }
+    }
+
+    // Initialize authentication manager
+    let authManager;
+
+    // Enhanced logout function
+    function logout() {
+      if (authManager) {
+        authManager.logout();
+      } else {
+        // Fallback for when authManager is not available
+        window.currentUser = null;
+        document.getElementById('auth-dropdown').classList.remove('hidden');
+        document.getElementById('user-menu').classList.add('hidden');
+      }
+    }
+
+    // Initialize authentication when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+      // Initialize auth manager with delay to ensure supabase is loaded
+      setTimeout(() => {
+        authManager = new AuthManager();
+      }, 500);
     });
   </script>
 

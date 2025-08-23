@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Final System Verification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .test-result {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .test-item {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Final System Verification</h1>
+    
+    <div class="test-item">
+        <h3>Test 1: Account Dropdown Functionality</h3>
+        <div id="dropdown-result">Testing...</div>
+        <button onclick="testDropdown()">Test Dropdown</button>
+        <a href="home.html" target="_blank">
+            <button>Open Home Page</button>
+        </a>
+    </div>
+    
+    <div class="test-item">
+        <h3>Test 2: QR Library Loading</h3>
+        <div id="qr-result">Testing...</div>
+        <button onclick="testQRLibrary()">Test QR Library</button>
+        <a href="qr-scanner.html" target="_blank">
+            <button>Open QR Scanner</button>
+        </a>
+    </div>
+    
+    <div class="test-item">
+        <h3>Test 3: Authentication Flow</h3>
+        <div id="auth-result">Testing...</div>
+        <button onclick="testAuthFlow()">Test Auth Flow</button>
+        <a href="login.html" target="_blank">
+            <button>Open Login Page</button>
+        </a>
+    </div>
+    
+    <div class="test-item">
+        <h3>Overall System Status</h3>
+        <div id="overall-result">Click tests above to verify system functionality</div>
+    </div>
+    
+    <!-- Load QR libraries for testing -->
+    <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
+    
+    <script>
+        function updateResult(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.className = `test-result ${type}`;
+            element.innerHTML = message;
+        }
+        
+        function testDropdown() {
+            // Check if home.js functions are available
+            fetch('home.js')
+                .then(response => response.text())
+                .then(data => {
+                    const hasToggleFunction = data.includes('toggleAuthDropdown');
+                    const hasRedirectFunction = data.includes('redirectToLogin');
+                    
+                    if (hasToggleFunction && hasRedirectFunction) {
+                        updateResult('dropdown-result', '✅ Account dropdown functions found in home.js', 'success');
+                    } else {
+                        updateResult('dropdown-result', '❌ Missing dropdown functions in home.js', 'error');
+                    }
+                })
+                .catch(error => {
+                    updateResult('dropdown-result', '⚠️ Could not verify home.js: ' + error.message, 'warning');
+                });
+        }
+        
+        function testQRLibrary() {
+            let results = [];
+            
+            // Test QRious
+            if (typeof QRious !== 'undefined') {
+                results.push('✅ QRious library loaded');
+            } else {
+                results.push('❌ QRious library missing');
+            }
+            
+            // Test Html5Qrcode
+            if (typeof Html5Qrcode !== 'undefined') {
+                results.push('✅ Html5Qrcode library loaded');
+                
+                // Test if getCameras method exists
+                if (typeof Html5Qrcode.getCameras === 'function') {
+                    results.push('✅ Camera API available');
+                } else {
+                    results.push('⚠️ Camera API method missing');
+                }
+            } else {
+                results.push('❌ Html5Qrcode library missing');
+            }
+            
+            const allLoaded = results.every(r => r.includes('✅'));
+            const type = allLoaded ? 'success' : (results.some(r => r.includes('❌')) ? 'error' : 'warning');
+            
+            updateResult('qr-result', results.join('<br>'), type);
+        }
+        
+        function testAuthFlow() {
+            // Test if login.html exists and handles parameters
+            fetch('login.html')
+                .then(response => response.text())
+                .then(data => {
+                    const hasFormSwitching = data.includes('URLSearchParams') && data.includes('form');
+                    const hasModeSwitching = data.includes('switchForm');
+                    
+                    if (hasFormSwitching && hasModeSwitching) {
+                        updateResult('auth-result', '✅ Login form parameter handling available', 'success');
+                    } else {
+                        updateResult('auth-result', '⚠️ Login form handling may be limited', 'warning');
+                    }
+                })
+                .catch(error => {
+                    updateResult('auth-result', '❌ Could not verify login.html: ' + error.message, 'error');
+                });
+        }
+        
+        function updateOverallStatus() {
+            const dropdownOk = document.getElementById('dropdown-result').classList.contains('success');
+            const qrOk = document.getElementById('qr-result').classList.contains('success');
+            const authOk = document.getElementById('auth-result').classList.contains('success');
+            
+            if (dropdownOk && qrOk && authOk) {
+                updateResult('overall-result', '🎉 All systems operational! The application is ready for use.', 'success');
+            } else {
+                const issues = [];
+                if (!dropdownOk) issues.push('Account dropdown');
+                if (!qrOk) issues.push('QR scanning');
+                if (!authOk) issues.push('Authentication');
+                
+                updateResult('overall-result', `⚠️ Issues detected in: ${issues.join(', ')}. Check individual tests above.`, 'warning');
+            }
+        }
+        
+        // Auto-run tests on page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                testQRLibrary();
+                setTimeout(() => {
+                    testDropdown();
+                    setTimeout(() => {
+                        testAuthFlow();
+                        setTimeout(updateOverallStatus, 500);
+                    }, 500);
+                }, 500);
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

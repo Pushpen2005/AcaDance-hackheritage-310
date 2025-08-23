@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auth Connection Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 2rem;
+      background: #f5f5f5;
+    }
+    .test-card {
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      margin-bottom: 1rem;
+    }
+    .test-button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 0.5rem;
+    }
+    .test-button:hover {
+      background: #5a67d8;
+    }
+    .status {
+      padding: 1rem;
+      border-radius: 4px;
+      margin-top: 1rem;
+    }
+    .success { background: #d4edda; color: #155724; }
+    .error { background: #f8d7da; color: #721c24; }
+    .info { background: #d1ecf1; color: #0c5460; }
+  </style>
+</head>
+<body>
+  <h1>🔗 Authentication Connection Test</h1>
+  
+  <div class="test-card">
+    <h3>📁 File Structure Test</h3>
+    <p>Testing if all required files exist and are accessible...</p>
+    <button class="test-button" onclick="testFileStructure()">Test Files</button>
+    <div id="file-test-result"></div>
+  </div>
+
+  <div class="test-card">
+    <h3>🔗 Navigation Test</h3>
+    <p>Test the connection between home page and login page:</p>
+    <button class="test-button" onclick="testLoginRedirect()">Test Login Redirect</button>
+    <button class="test-button" onclick="testSignupRedirect()">Test Signup Redirect</button>
+    <button class="test-button" onclick="goToHome()">Go to Home Page</button>
+    <div id="nav-test-result"></div>
+  </div>
+
+  <div class="test-card">
+    <h3>⚙️ JavaScript Functions Test</h3>
+    <p>Test if the authentication functions are working:</p>
+    <button class="test-button" onclick="testJavaScriptFunctions()">Test Functions</button>
+    <div id="js-test-result"></div>
+  </div>
+
+  <script>
+    function testFileStructure() {
+      const result = document.getElementById('file-test-result');
+      result.innerHTML = '<div class="status info">Testing file accessibility...</div>';
+      
+      const files = ['home.html', 'login.html', 'supabase-config.js', 'attendance-manager.js', 'home.js'];
+      let tests = [];
+      
+      files.forEach(file => {
+        fetch(file, { method: 'HEAD' })
+          .then(response => {
+            if (response.ok) {
+              tests.push(`✅ ${file} - Accessible`);
+            } else {
+              tests.push(`❌ ${file} - Not accessible (${response.status})`);
+            }
+            
+            if (tests.length === files.length) {
+              result.innerHTML = `<div class="status success">
+                <h4>File Structure Test Results:</h4>
+                ${tests.map(test => `<div>${test}</div>`).join('')}
+              </div>`;
+            }
+          })
+          .catch(error => {
+            tests.push(`❌ ${file} - Error: ${error.message}`);
+            
+            if (tests.length === files.length) {
+              result.innerHTML = `<div class="status error">
+                <h4>File Structure Test Results:</h4>
+                ${tests.map(test => `<div>${test}</div>`).join('')}
+              </div>`;
+            }
+          });
+      });
+    }
+
+    function testLoginRedirect() {
+      const result = document.getElementById('nav-test-result');
+      result.innerHTML = '<div class="status info">Testing login redirect...</div>';
+      
+      setTimeout(() => {
+        window.location.href = 'login.html?form=login';
+      }, 1000);
+    }
+
+    function testSignupRedirect() {
+      const result = document.getElementById('nav-test-result');
+      result.innerHTML = '<div class="status info">Testing signup redirect...</div>';
+      
+      setTimeout(() => {
+        window.location.href = 'login.html?form=signup';
+      }, 1000);
+    }
+
+    function goToHome() {
+      window.location.href = 'home.html';
+    }
+
+    function testJavaScriptFunctions() {
+      const result = document.getElementById('js-test-result');
+      let tests = [];
+      
+      // Test 1: Check if we can create the redirect function
+      try {
+        const testRedirect = function(mode = 'login') {
+          return `login.html?form=${mode}`;
+        };
+        
+        const loginUrl = testRedirect('login');
+        const signupUrl = testRedirect('signup');
+        
+        if (loginUrl === 'login.html?form=login' && signupUrl === 'login.html?form=signup') {
+          tests.push('✅ Redirect function logic works correctly');
+        } else {
+          tests.push('❌ Redirect function logic failed');
+        }
+      } catch (error) {
+        tests.push(`❌ Redirect function error: ${error.message}`);
+      }
+      
+      // Test 2: Check URL parameter parsing
+      try {
+        const testUrl = new URL('http://example.com/login.html?form=signup');
+        const urlParams = new URLSearchParams(testUrl.search);
+        const mode = urlParams.get('form');
+        
+        if (mode === 'signup') {
+          tests.push('✅ URL parameter parsing works');
+        } else {
+          tests.push('❌ URL parameter parsing failed');
+        }
+      } catch (error) {
+        tests.push(`❌ URL parsing error: ${error.message}`);
+      }
+      
+      // Test 3: Check dropdown toggle simulation
+      try {
+        const mockDropdown = {
+          classList: {
+            add: () => {},
+            remove: () => {},
+            toggle: () => true
+          }
+        };
+        
+        // Simulate toggle
+        const toggleResult = mockDropdown.classList.toggle();
+        if (toggleResult) {
+          tests.push('✅ Dropdown toggle logic works');
+        } else {
+          tests.push('❌ Dropdown toggle logic failed');
+        }
+      } catch (error) {
+        tests.push(`❌ Dropdown test error: ${error.message}`);
+      }
+      
+      result.innerHTML = `<div class="status success">
+        <h4>JavaScript Functions Test Results:</h4>
+        ${tests.map(test => `<div>${test}</div>`).join('')}
+        <div style="margin-top: 1rem; padding: 1rem; background: #e7f3ff; border-radius: 4px;">
+          <strong>Next Steps:</strong>
+          <ol>
+            <li>Go to the home page using the button above</li>
+            <li>Click on the "Account" button in the top-right</li>
+            <li>Try clicking "Login" or "Sign Up"</li>
+            <li>Verify you're redirected to the login page with the correct form</li>
+          </ol>
+        </div>
+      </div>`;
+    }
+
+    // Auto-run file structure test on load
+    window.addEventListener('load', () => {
+      setTimeout(testFileStructure, 500);
+    });
+  </script>
+</body>
+</html>

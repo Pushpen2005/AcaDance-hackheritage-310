@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Library Loading Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin: 20px 0;
+        }
+        
+        .success { border-left: 4px solid #4CAF50; background: #f8fff8; }
+        .error { border-left: 4px solid #f44336; background: #fff8f8; }
+        .loading { border-left: 4px solid #2196F3; background: #f8f9ff; }
+        
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        
+        .log {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+        
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        button:hover {
+            background: #1976D2;
+        }
+    </style>
+</head>
+<body>
+    <h1>QR Library Loading Test</h1>
+    
+    <div class="test-container loading">
+        <h3>Library Loading Status</h3>
+        <div id="loading-status">Testing library availability...</div>
+    </div>
+    
+    <div class="test-container">
+        <h3>Test Actions</h3>
+        <button onclick="testLibraryAvailability()">Check Library Status</button>
+        <button onclick="testCameraAccess()">Test Camera Access</button>
+        <button onclick="clearLog()">Clear Log</button>
+        <button onclick="location.reload()">Refresh Page</button>
+    </div>
+    
+    <div class="test-container">
+        <h3>Test Log</h3>
+        <div id="test-log" class="log">Initializing tests...\n</div>
+    </div>
+    
+    <div class="test-container">
+        <h3>Navigation</h3>
+        <a href="qr-scanner.html" style="text-decoration: none;">
+            <button>Open QR Scanner</button>
+        </a>
+        <a href="home.html" style="text-decoration: none;">
+            <button>Back to Home</button>
+        </a>
+    </div>
+    
+    <!-- Load the same libraries as the main pages with fallbacks -->
+    <script>
+        // Global variables to track loading status
+        window.libraryLoadStatus = {
+            qrious: false,
+            html5qrcode: false,
+            loadAttempts: 0
+        };
+        
+        // Function to load script with promise
+        function loadScript(src, name) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = () => {
+                    console.log(`✅ ${name} loaded from: ${src}`);
+                    resolve();
+                };
+                script.onerror = () => {
+                    console.error(`❌ Failed to load ${name} from: ${src}`);
+                    reject(new Error(`Failed to load ${name}`));
+                };
+                document.head.appendChild(script);
+            });
+        }
+        
+        // Load libraries with multiple fallbacks
+        async function loadLibrariesWithFallbacks() {
+            const qriousUrls = [
+                'https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js',
+                'https://unpkg.com/qrious@4.0.2/dist/qrious.min.js'
+            ];
+            
+            const html5QrcodeUrls = [
+                'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/minified/html5-qrcode.min.js',
+                'https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js',
+                'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.4/minified/html5-qrcode.min.js',
+                'https://unpkg.com/html5-qrcode@2.3.4/minified/html5-qrcode.min.js'
+            ];
+            
+            // Try loading QRious
+            for (const url of qriousUrls) {
+                try {
+                    await loadScript(url, 'QRious');
+                    window.libraryLoadStatus.qrious = true;
+                    break;
+                } catch (error) {
+                    console.warn(`QRious failed from ${url}`);
+                }
+            }
+            
+            // Try loading Html5Qrcode
+            for (const url of html5QrcodeUrls) {
+                try {
+                    await loadScript(url, 'Html5Qrcode');
+                    // Verify the library actually loaded
+                    if (typeof Html5Qrcode !== 'undefined') {
+                        window.libraryLoadStatus.html5qrcode = true;
+                        break;
+                    }
+                } catch (error) {
+                    console.warn(`Html5Qrcode failed from ${url}`);
+                }
+            }
+            
+            window.libraryLoadStatus.loadAttempts++;
+            return window.libraryLoadStatus;
+        }
+    </script>
+    
+    <!-- Fallback static includes -->
+    <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
+    
+    <script>
+        function log(message) {
+            const logElement = document.getElementById('test-log');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.textContent += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(message);
+        }
+        
+        function updateStatus(message, type = 'loading') {
+            const statusElement = document.getElementById('loading-status');
+            const container = statusElement.parentElement;
+            
+            container.className = `test-container ${type}`;
+            statusElement.textContent = message;
+        }
+        
+        function testLibraryAvailability() {
+            log('=== Testing Library Availability ===');
+            
+            // Test loading status
+            if (window.libraryLoadStatus) {
+                log(`Load attempts: ${window.libraryLoadStatus.loadAttempts}`);
+                log(`QRious status: ${window.libraryLoadStatus.qrious ? '✅ Loaded' : '❌ Failed'}`);
+                log(`Html5Qrcode status: ${window.libraryLoadStatus.html5qrcode ? '✅ Loaded' : '❌ Failed'}`);
+            }
+            
+            // Test Html5Qrcode
+            if (typeof Html5Qrcode !== 'undefined') {
+                log('✅ Html5Qrcode: Available');
+                try {
+                    log('   Constructor: ' + typeof Html5Qrcode);
+                    log('   getCameras method: ' + typeof Html5Qrcode.getCameras);
+                    if (Html5Qrcode.version) {
+                        log('   Version: ' + Html5Qrcode.version);
+                    }
+                } catch (e) {
+                    log('   Error accessing properties: ' + e.message);
+                }
+                updateStatus('✅ Html5Qrcode library loaded successfully', 'success');
+            } else {
+                log('❌ Html5Qrcode: NOT AVAILABLE');
+                log('   Global Html5Qrcode: ' + (typeof window.Html5Qrcode));
+                log('   Window properties with "Html5": ' + Object.keys(window).filter(k => k.includes('Html5')));
+                updateStatus('❌ Html5Qrcode library failed to load', 'error');
+            }
+            
+            // Test QRious
+            if (typeof QRious !== 'undefined') {
+                log('✅ QRious: Available');
+                try {
+                    log('   Constructor: ' + typeof QRious);
+                    if (QRious.version) {
+                        log('   Version: ' + QRious.version);
+                    }
+                } catch (e) {
+                    log('   Error accessing QRious properties: ' + e.message);
+                }
+            } else {
+                log('❌ QRious: NOT AVAILABLE');
+                log('   Global QRious: ' + (typeof window.QRious));
+            }
+            
+            // Test browser capabilities
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                log('✅ Camera API: Supported');
+            } else {
+                log('❌ Camera API: Not supported');
+                log('   navigator.mediaDevices: ' + !!navigator.mediaDevices);
+                log('   getUserMedia: ' + !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia));
+            }
+            
+            // Test network connectivity
+            if (navigator.onLine) {
+                log('✅ Network: Online');
+            } else {
+                log('❌ Network: Offline');
+            }
+            
+            log('Test completed.');
+        }
+        
+        async function testCameraAccess() {
+            log('=== Testing Camera Access ===');
+            
+            if (typeof Html5Qrcode === 'undefined') {
+                log('❌ Html5Qrcode not available - cannot test camera');
+                return;
+            }
+            
+            try {
+                log('Requesting camera devices...');
+                const devices = await Html5Qrcode.getCameras();
+                log(`Found ${devices.length} camera device(s):`);
+                
+                devices.forEach((device, index) => {
+                    log(`  ${index + 1}. ${device.label || 'Unknown Camera'} (${device.id})`);
+                });
+                
+                if (devices.length === 0) {
+                    log('⚠️ No cameras found - QR scanning will not work');
+                } else {
+                    log('✅ Camera access test successful');
+                }
+                
+            } catch (error) {
+                log(`❌ Camera access test failed: ${error.message}`);
+                
+                if (error.name === 'NotAllowedError') {
+                    log('   Reason: Camera permission denied');
+                } else if (error.name === 'NotFoundError') {
+                    log('   Reason: No camera found');
+                } else {
+                    log(`   Reason: ${error.name} - ${error.message}`);
+                }
+            }
+        }
+        
+        function clearLog() {
+            document.getElementById('test-log').textContent = 'Log cleared.\n';
+        }
+        
+        // Auto-run tests on page load
+        window.addEventListener('load', () => {
+            log('Page loaded, running initial tests...');
+            
+            // Wait a moment for libraries to load
+            setTimeout(() => {
+                testLibraryAvailability();
+            }, 1000);
+        });
+        
+        // Log any script loading errors
+        window.addEventListener('error', (event) => {
+            if (event.filename) {
+                log(`❌ Script error: ${event.filename} - ${event.message}`);
+            }
+        });
+    </script>
+</body>
+</html>

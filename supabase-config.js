@@ -1,12 +1,16 @@
 // Supabase Configuration for HH310 Academic System
 // Replace these with your actual Supabase project credentials
 
+// For compatibility with test scripts
+const supabaseUrl = 'https://tjuordumjemznovrjucx.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRqdW9yZHVtamVtem5vdnJqdWN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4NjkzODYsImV4cCI6MjA3MTQ0NTM4Nn0.ViwZLoOOaRhh_1dJQX9ukUwB8tZ6kWbc02OkkGGguis';
+
 const SUPABASE_CONFIG = {
   // Replace with your actual Supabase project URL
-  url: 'https://tjuordumjemznovrjucx.supabase.co',
+  url: supabaseUrl,
   
   // Replace with your actual Supabase anon/public key
-  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRqdW9yZHVtamVtem5vdnJqdWN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4NjkzODYsImV4cCI6MjA3MTQ0NTM4Nn0.ViwZLoOOaRhh_1dJQX9ukUwB8tZ6kWbc02OkkGGguis'
+  anonKey: supabaseAnonKey
 };
 
 // Initialize Supabase client

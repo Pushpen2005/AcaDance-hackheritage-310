@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Auth Dropdown</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      background: #f0f0f0;
+    }
+
+    .test-container {
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      background: #667eea;
+      border-radius: 8px;
+      margin-bottom: 2rem;
+    }
+
+    .navbar-brand h2 {
+      color: white;
+      margin: 0;
+    }
+
+    .auth-dropdown {
+      position: relative;
+      display: inline-block;
+    }
+
+    .btn {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .btn--auth {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      font-size: 0.9rem;
+    }
+
+    .btn--auth:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .auth-chevron {
+      transition: transform 0.3s ease;
+    }
+
+    .auth-dropdown.active .auth-chevron {
+      transform: rotate(180deg);
+    }
+
+    .auth-dropdown-menu {
+      position: absolute;
+      top: calc(100% + 0.5rem);
+      right: 0;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      min-width: 160px;
+      opacity: 0;
+      transform: translateY(-10px);
+      pointer-events: none;
+      transition: all 0.3s ease;
+      z-index: 1000;
+      border: 1px solid #e5e5e5;
+    }
+
+    .auth-dropdown-menu.show {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: all;
+    }
+
+    .auth-dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      color: #374151;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .auth-dropdown-item:last-child {
+      border-bottom: none;
+    }
+
+    .auth-dropdown-item:hover {
+      background: #f8fafc;
+      color: #667eea;
+    }
+
+    .auth-dropdown-item i {
+      width: 16px;
+      text-align: center;
+    }
+
+    .debug-info {
+      background: #f8f9fa;
+      padding: 1rem;
+      border-radius: 4px;
+      margin-top: 1rem;
+      font-family: monospace;
+      font-size: 0.9rem;
+    }
+
+    .test-buttons {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .test-btn {
+      padding: 0.5rem 1rem;
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .test-btn:hover {
+      background: #218838;
+    }
+  </style>
+</head>
+<body>
+  <div class="test-container">
+    <h1>🔧 Authentication Dropdown Test</h1>
+    
+    <!-- Test Navbar -->
+    <nav class="navbar">
+      <div class="navbar-brand">
+        <h2>HH310 Test</h2>
+      </div>
+      <div class="auth-dropdown" id="auth-dropdown">
+        <button class="btn btn--auth" id="auth-btn" onclick="toggleAuthDropdown()">
+          <i class="fas fa-user"></i>
+          Account
+          <i class="fas fa-chevron-down auth-chevron"></i>
+        </button>
+        <div class="auth-dropdown-menu" id="auth-dropdown-menu">
+          <a href="#" class="auth-dropdown-item" onclick="testRedirectToLogin('login')">
+            <i class="fas fa-sign-in-alt"></i>
+            Login
+          </a>
+          <a href="#" class="auth-dropdown-item" onclick="testRedirectToLogin('signup')">
+            <i class="fas fa-user-plus"></i>
+            Sign Up
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="debug-info" id="debug-info">
+      Click "Account" button above to test dropdown...
+    </div>
+
+    <div class="test-buttons">
+      <button class="test-btn" onclick="testDropdownDirectly()">Test Dropdown Directly</button>
+      <button class="test-btn" onclick="testLoginRedirect()">Test Login Redirect</button>
+      <button class="test-btn" onclick="testSignupRedirect()">Test Signup Redirect</button>
+    </div>
+
+    <div style="margin-top: 2rem;">
+      <h3>📋 Test Instructions:</h3>
+      <ol>
+        <li>Click the "Account" button in the navbar above</li>
+        <li>The dropdown should appear with Login and Sign Up options</li>
+        <li>Click "Login" - it should show a redirect message</li>
+        <li>Click "Sign Up" - it should show a redirect message</li>
+        <li>Use the test buttons below to test individual functions</li>
+      </ol>
+    </div>
+  </div>
+
+  <script>
+    function log(message) {
+      const debugInfo = document.getElementById('debug-info');
+      const timestamp = new Date().toLocaleTimeString();
+      debugInfo.innerHTML += `<br>[${timestamp}] ${message}`;
+      console.log(message);
+    }
+
+    function toggleAuthDropdown() {
+      log('🔄 toggleAuthDropdown() called');
+      const dropdown = document.getElementById('auth-dropdown');
+      const menu = document.getElementById('auth-dropdown-menu');
+      
+      if (!dropdown || !menu) {
+        log('❌ Dropdown elements not found!');
+        return;
+      }
+
+      const isShown = menu.classList.contains('show');
+      log(`📋 Dropdown currently shown: ${isShown}`);
+      
+      if (isShown) {
+        dropdown.classList.remove('active');
+        menu.classList.remove('show');
+        log('📤 Dropdown closed');
+      } else {
+        dropdown.classList.add('active');
+        menu.classList.add('show');
+        log('📥 Dropdown opened');
+      }
+    }
+
+    function testRedirectToLogin(mode) {
+      log(`🔗 testRedirectToLogin('${mode}') called`);
+      log(`🚀 Would redirect to: login.html?form=${mode}`);
+      
+      // Instead of actually redirecting, just show the message
+      alert(`✅ Redirect test successful!\n\nWould redirect to: login.html?form=${mode}\n\nIn the real page, this would take you to the login page.`);
+      
+      // Close dropdown
+      const dropdown = document.getElementById('auth-dropdown');
+      const menu = document.getElementById('auth-dropdown-menu');
+      if (dropdown && menu) {
+        dropdown.classList.remove('active');
+        menu.classList.remove('show');
+        log('📤 Dropdown closed after redirect test');
+      }
+    }
+
+    function testDropdownDirectly() {
+      log('🧪 Testing dropdown directly...');
+      const menu = document.getElementById('auth-dropdown-menu');
+      if (menu) {
+        menu.classList.toggle('show');
+        log(`📋 Dropdown show class toggled. Now: ${menu.classList.contains('show')}`);
+      }
+    }
+
+    function testLoginRedirect() {
+      testRedirectToLogin('login');
+    }
+
+    function testSignupRedirect() {
+      testRedirectToLogin('signup');
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+      log('🚀 Test page loaded successfully');
+      log('✅ All functions are ready for testing');
+    });
+  </script>
+</body>
+</html>
